@@ -1,63 +1,63 @@
-﻿# Опрос пользователей: шаблон анкеты
+﻿# User survey: questionnaire template
 
-Задача: TIL-2. Проводит опрос: TIL-8.
+Task: TIL-2. The survey itself is run under TIL-8.
 
-> **Правило честности.** В этом файле нет ответов. Ответы вносят только по реальным респондентам.
-> Нельзя придумывать респондентов, цифры и цитаты. Если опрошено меньше людей, чем нужно, так и пишем.
+> **Honesty rule.** This file contains no answers. Answers are entered only for real respondents.
+> Do not invent respondents, numbers or quotes. If fewer people were surveyed than planned, say so.
 
-## Как проводить
-- Целевая группа: люди, которые пользуются казахским языком в учёбе или работе (студенты, преподаватели, переводчики, носители, изучающие язык).
-- Нужно минимум 3–5 респондентов.
-- Перед опросом сообщить, что ответы используются в дипломном проекте. Имя можно не указывать (анонимно).
-- Ответы записывать как есть, без правок. Выводы писать отдельно, в сводке.
+## How to run the survey
+- Target group: people who use Kazakh in study or work (students, teachers, translators, native speakers, language learners).
+- At least 3-5 respondents.
+- Before the survey, tell the respondent that the answers are used in a diploma project. Names are optional (anonymous is fine).
+- Record answers as given, without editing. Write conclusions separately, in the summary.
 
-## Анкета
+## Questionnaire
 
-### A. Респондент
-| Поле | Значение |
+### A. Respondent
+| Field | Value |
 |---|---|
-| Номер респондента (R1, R2, ...) | |
-| Дата опроса | |
-| Роль (студент / преподаватель / переводчик / другое) | |
-| Как опрошен (лично / онлайн-форма / чат) | |
-| Согласие на использование ответов | да / нет |
+| Respondent number (R1, R2, ...) | |
+| Survey date | |
+| Role (student / teacher / translator / other) | |
+| How surveyed (in person / online form / chat) | |
+| Consent to use the answers | yes / no |
 
-### B. Текущая практика
-1. Как часто вы пишете или переводите тексты на казахском?
-2. Какими инструментами или словарями пользуетесь для казахских терминов и переводов?
-3. Что в них неудобно или чего не хватает?
-4. Сталкивались ли вы с тем, что для термина есть несколько вариантов перевода? Как выбираете?
+### B. Current practice
+1. How often do you write or translate texts in Kazakh?
+2. Which tools or dictionaries do you use for Kazakh terms and translations?
+3. What is inconvenient or missing in them?
+4. Have you met terms with several translation variants? How do you choose?
 
-### C. Идея платформы
-Кратко описать идею: пользователи выполняют короткие задания (перевод предложения ru-kk, выбор или предложение казахского термина), другие голосуют, принятые варианты попадают в словарь, а также в «слово дня» и в датасет.
+### C. The platform idea
+Briefly describe the idea: users complete short tasks (translate a ru-kk sentence, choose or suggest a Kazakh term), others vote, accepted variants go into the dictionary, "word of the day" and the dataset.
 
-5. Стали бы вы выполнять такие задания? Почему да или нет?
-6. Сколько времени в день вы готовы тратить? (до 5 мин / 5–15 / больше 15 / не готов)
-7. Что вас мотивировало бы? (рейтинг, польза для языка, учёба, другое)
-8. Доверяли бы вы терминам, выбранным голосованием пользователей? Что повысило бы доверие?
-9. Какие функции важнее всего? Оценка 1–5 для каждой:
-   - перевод предложений: ___
-   - голосование за термины: ___
-   - словарь терминов: ___
-   - слово дня: ___
-   - подсказки по казахским связкам (және, сонымен, қысқасы, дегенмен): ___
-   - скачивание датасета: ___
-10. Чего вы опасаетесь? (ошибки в данных, низкое качество, нет времени, другое)
+5. Would you do such tasks? Why or why not?
+6. How much time per day would you spend? (up to 5 min / 5-15 / more than 15 / none)
+7. What would motivate you? (rating, benefit for the language, study, other)
+8. Would you trust terms chosen by user voting? What would increase trust?
+9. Which features matter most? Rate each from 1 to 5:
+   - sentence translation: ___
+   - voting on terms: ___
+   - terminology dictionary: ___
+   - word of the day: ___
+   - hints for Kazakh connectors (және, сонымен, қысқасы, дегенмен): ___
+   - dataset download: ___
+10. What are your concerns? (errors in data, low quality, no time, other)
 
-### D. Свободный комментарий
-11. Что ещё важно, о чём мы не спросили?
+### D. Free comment
+11. What else is important that we did not ask?
 
-## Сводка результатов (заполняется после опроса)
+## Results summary (fill in after the survey)
 
-Всего респондентов: __ (реально опрошено)
+Total respondents: __ (actually surveyed)
 
-| Вывод | Статус | На чём основан (номера респондентов) |
+| Conclusion | Status | Based on (respondent numbers) |
 |---|---|---|
-| | проверено | R1, R2, ... |
-| | предположение | нет подтверждения |
+| | verified | R1, R2, ... |
+| | assumption | not confirmed |
 
-- **Проверено** — подтверждено ответами не менее чем нескольких реальных респондентов.
-- **Предположение** — наша гипотеза, которую опрос не подтвердил.
+- **Verified**: confirmed by the answers of several real respondents.
+- **Assumption**: our hypothesis that the survey did not confirm.
 
-## Ограничения
-(Указать: малая выборка, как выбирали респондентов, возможное смещение.)
+## Limitations
+(State: small sample, how respondents were chosen, possible bias.)
