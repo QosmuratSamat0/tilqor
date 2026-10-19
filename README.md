@@ -1,28 +1,28 @@
 ﻿# Tilqor
 
-Краудсорсинговая платформа для сбора и верификации языковых данных казахского языка с модулями ежедневной практики и терминологического словаря.
+A crowdsourcing platform for collecting and verifying Kazakh language data, with daily practice and terminology dictionary modules.
 
-Дипломный проект, группа SE-2430.
+Diploma project, group SE-2430.
 
-## Команда
-- Космурат Самат — tech lead
-- Алпамыс Абылайхан
-- Довутбеков Улыкбек
+## Team
+- Kosmurat Samat: tech lead
+- Alpamys Abylaikhan
+- Dovutbekov Ulykbek
 
-Руководитель: Латута Константин Николаевич.
+Supervisor: Konstantin N. Latuta.
 
-## Структура репозитория
-- `docs/` — proposal, требования, литобзор, сравнения, план проверки, риски
-- `diagrams/` — исходники диаграмм (`src/`) и картинки (`png/`)
-- `src/` — код (пока пусто)
-- `tests/` — тесты (пока пусто)
-- `config.example.env` — пример настроек; реальный `.env` не коммитить
+## Repository structure
+- `docs/`: proposal, requirements, literature review, comparisons, verification plan, risks
+- `diagrams/`: diagram sources (`src/`) and images (`png/`)
+- `src/`: code (empty for now)
+- `tests/`: tests (empty for now)
+- `config.example.env`: example settings; never commit the real `.env`
 
-## Прототип
+## Prototype
 https://claude.ai/artifact/Qx4VQc3627Fkb2knncYf18
 
-## Правила работы с Git
-- Каждая работа — задача в YouTrack (проект TIL).
-- Ветка `TIL-N-short-name`, коммит `TIL-N: описание`.
-- В `main` только через PR с ревью другим участником.
-- Паролей и токенов в репозитории нет.
+## Git rules
+- Every piece of work has a task in YouTrack (project TIL).
+- Branch `TIL-N-short-name`, commit message `TIL-N: description`.
+- Changes reach `main` only via a PR reviewed by another team member.
+- No passwords or tokens in the repository.

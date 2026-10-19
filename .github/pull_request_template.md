@@ -1,10 +1,10 @@
-﻿## Задача
+﻿## Task
 YouTrack: TIL-
 
-## Что сделано
+## What was done
 
 
-## Критерии приёмки
-- [ ] выполнены критерии из задачи
-- [ ] нет паролей и токенов
-- [ ] ревью другим участником команды
+## Acceptance criteria
+- [ ] criteria from the task are met
+- [ ] no passwords or tokens
+- [ ] reviewed by another team member
