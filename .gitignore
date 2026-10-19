@@ -1,0 +1,30 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+
+# Secrets and local config (never commit)
+.env
+.env.*
+!config.example.env
+*.pem
+*.key
+
+# Django
+db.sqlite3
+staticfiles/
+media/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
