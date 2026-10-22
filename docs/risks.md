@@ -4,8 +4,10 @@ Project: Tilqor - Development of a Crowdsourcing Platform for Collecting and Ver
 
 Task: [TIL-4 - Risks and milestones](https://qosmuratsamat.youtrack.cloud/issue/TIL-4/Risks-and-milestones)
 
-Document owner: Dovutbekov Ulykbek.  
-Task due date: 2026-10-23.  
+Document owner: Dovutbekov Ulykbek.
+
+Task due date: 2026-10-23.
+
 Last updated: 2026-10-23.
 
 ## 1. Planning basis
