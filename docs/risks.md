@@ -1,0 +1,112 @@
+# Risks and Milestones
+
+Project: Tilqor - Development of a Crowdsourcing Platform for Collecting and Verifying Kazakh Language Data with Daily Language Practice and Terminology Glossary Modules.
+
+Task: [TIL-4 - Risks and milestones](https://qosmuratsamat.youtrack.cloud/issue/TIL-4/Risks-and-milestones)
+
+Document owner: Dovutbekov Ulykbek.  
+Task due date: 2026-10-23.  
+Last updated: 2026-10-23.
+
+## 1. Planning basis
+
+This document covers risks, project milestones, task dependencies, and responsibility allocation. Risk ratings are initial planning estimates, not measured probabilities. Review them after the user survey, architectural decisions, and each pre-defense.
+
+The team names and the tech lead role come from the project README. Other work assignments below are proposed allocations for team agreement. The submission document specifies deliverables due on 24 October; it does not provide the dates of the later defenses. Unknown dates are marked TBD rather than presented as confirmed commitments.
+
+## 2. Risk assessment
+
+Probability: Low = unlikely under the current plan; Medium = plausible; High = likely without preventive action.
+
+Impact: Low = limited rework within one task; Medium = delay or reduced quality in one module; High = failure of a mandatory workflow, loss of data, or inability to deliver or release the planned result.
+
+Risk owners monitor the warning signs and coordinate the response. All risks below are open at the time of writing.
+
+| ID | Risk | Probability | Impact | Mitigation and response | Warning sign | Proposed owner |
+|---|---|---|---|---|---|---|
+| R-01 | Sentence sources or contributed content have unclear or incompatible licenses, preventing redistribution of the dataset. | Medium | High | Record the source URL, license and version, attribution, and changes for reused content. Check terms before importing sentences. Exclude content with unresolved rights. Preserve required attribution and ShareAlike conditions in exports containing adapted material. | A candidate source has no clear license, or an export loses source attribution. | Ulykbek |
+| R-02 | Too few participants contribute enough data for evaluation. | High | High | Recruit a pilot group early through the survey, prepare a small set of permitted seed data, and monitor contributions. If participation remains low, reduce the pilot domain and report the sample limitation. | Pilot recruitment is below the agreed target or contributions stop during the pilot. | Abylaikhan |
+| R-03 | Incorrect translations, definitions, or examples are accepted. | High | High | Define review criteria, require independent review, prevent self-approval, and audit accepted samples. Return disputed or failed records to review. | Sample audits identify incorrect accepted records or reviewers frequently disagree. | Ulykbek |
+| R-04 | Reviewers disagree about terminology and verification becomes inconsistent. | High | Medium | Document how alternatives and subject areas are handled. Keep review reasons and version history. Escalate unresolved cases to a moderator and seek supervisor or language specialist input where necessary. | Similar submissions receive contradictory decisions or disputes remain unresolved. | Ulykbek |
+| R-05 | Spam, duplicate submissions, or coordinated voting distort the data. | Medium | High | Add submission limits, duplicate checks, reporting, and moderation. Prevent repeated votes by one account on the same review and inspect suspicious activity. | Repeated identical entries, bursts of votes, or repeated abuse reports appear. | Samat |
+| R-06 | The review queue grows faster than reviewers can process it. | Medium | High | Track queue size and oldest pending record, assign review sessions, and limit new pilot submissions if necessary. Keep unverified data out of accepted-data views. | Pending records increase across consecutive reviews or exceed the agreed review time. | Ulykbek |
+| R-07 | Collecting data, verification, daily practice, and the glossary exceed the available development time. | High | High | Prioritize one complete workflow from submission to verified glossary entry and practice use. Freeze mandatory scope before implementation. Defer optional features and review progress weekly. | Mandatory work repeatedly misses its planned completion or optional work delays the core workflow. | Samat |
+| R-08 | Modules use incompatible API contracts, data models, or record statuses. | Medium | High | Agree on the schema, statuses, and API contracts before parallel implementation. Integrate a small complete workflow early and check it after contract changes. | Frontend and backend disagree on fields or unverified records appear in practice. | Samat |
+| R-09 | Database failure or a faulty migration causes loss of submissions and review history. | Low | High | Automate backups, test restoration before the pilot, and validate migrations against a test database. Restore the last verified backup if recovery is required. | Backups fail, restoration has not been demonstrated, or a migration removes expected records. | Samat |
+| R-10 | Personal information is exposed through public profiles, datasets, logs, or repository files. | Medium | High | Minimize collected personal information, separate account data from public exports, restrict privileged access, and review exports and commits. Remove exposed information and revoke affected credentials if an incident occurs. | An export contains account details or logs and commits contain confidential values. | Samat |
+| R-11 | The pilot does not produce enough reliable evidence to evaluate the project. | Medium | High | Define metrics, measurement conditions, an evaluation sample, and a baseline before the pilot. Measure task completion, review time, sample accuracy, and usability. Report missing evidence and sample limitations explicitly. | Metrics are undefined when the pilot starts or results cannot be reproduced. | Abylaikhan |
+| R-12 | Unclear ownership or unavailable team members delay dependent tasks. | Medium | Medium | Assign one accountable owner to each work item, keep progress and blockers in YouTrack, and document setup and handovers. Reassign blocked work during the weekly review. | A mandatory task has no owner or a blocker remains unresolved across reviews. | Samat |
+
+### Data licensing controls for R-01
+
+Wikipedia text commonly uses CC BY-SA 4.0, but the license of each actual source must be checked. Reuse requires compliance with applicable attribution requirements; sharing adapted CC BY-SA material also triggers ShareAlike conditions. A dataset containing adapted source sentences must preserve those obligations. Do not assume that all content from a website has one license, or that collecting different sources automatically makes their licenses compatible.
+
+Before including a source in a downloadable dataset, record its URL, retrieval date, license and version, attribution, modifications, and intended export treatment. Keep unresolved sources out of imports and exports. Apply an explicit contribution agreement to user submissions before accepting content for redistribution.
+
+References:
+
+- [Wikimedia content reuse guidance](https://www.mediawiki.org/wiki/Wikimedia_APIs/Content_reuse)
+- [Creative Commons Attribution-ShareAlike 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.en)
+- [Creative Commons ShareAlike interpretation](https://wiki.creativecommons.org/wiki/ShareAlike_interpretation)
+
+## 3. Project milestones
+
+The task deadline is 2026-10-23. The preparation document sets a submission deadline of 2026-10-24. It does not establish the exact defense dates below; TBD dates must be replaced with the academic schedule before the dated-milestones criterion can be marked complete.
+
+| Milestone | Date | Deliverables and exit criteria | Coordinator |
+|---|---|---|---|
+| Risks and milestones document | 2026-10-23 | TIL-4 document prepared, reviewed by another team member, and linked from YouTrack; unresolved schedule information recorded. | Ulykbek |
+| Initial submission preparation | 2026-10-24 | README, proposal and scope, literature review, system and technology comparisons, initial requirements, diagrams, prototype, evaluation plan, YouTrack planning, and supervisor feedback are collected in the repository. | Samat |
+| pre-defense-1 | TBD - confirm against the academic schedule | Initial submission reviewed; required deliverables checked; known limitations recorded; the submitted commit identified by the tag `pre-defense-1`. | Samat |
+| pre-defense-2 | TBD - academic date not supplied | Integrated submission, verification, glossary, and daily practice workflows demonstrated; initial test and pilot results available; limitations documented; submission tagged `pre-defense-2`. | Samat |
+| final-pre-defense | TBD - academic date not supplied | Mandatory requirements verified, evaluation completed against the agreed baseline, documentation and setup instructions finalized, and critical defects resolved; submission tagged `final-pre-defense`. | Samat |
+
+For each defense, provide the repository link, tag, completed work, known limitations, and outstanding tasks. Preserve previous submission tags.
+
+## 4. Task dependencies
+
+The repository confirms TIL-1 (repository setup), TIL-2 (survey template), and TIL-8 (conducting the survey). The supplied task link identifies this document as TIL-4. W-01 through W-10 below are local planning references, not invented YouTrack issue IDs. Map them to actual issues when the implementation backlog is available.
+
+| Work item | Depends on | Reason and completion condition |
+|---|---|---|
+| TIL-2: survey template | TIL-1: repository setup | The questionnaire must be versioned and available for review. |
+| TIL-8: conduct the user survey | TIL-2: survey template | Use the reviewed questionnaire; record real responses and evidence-based findings. |
+| TIL-4: risks and milestones | TIL-1: repository setup | Store the document in the repository. Survey findings and confirmed dates trigger later updates. |
+| W-01: scope and requirements | TIL-8: survey findings | Draft requirements may start earlier; baseline approval requires separating evidence from assumptions and defining acceptance criteria. |
+| W-02: architecture, schema, and API contracts | W-01 | Define components, data ownership, statuses, and interfaces against the agreed requirements. |
+| W-03: source licensing and contribution rules | W-01 | Establish permitted source use, attribution, export conditions, and contributor permissions before collecting reusable content. |
+| W-04: accounts and data submission | W-02, W-03 | Implement access roles and submissions with the required provenance fields. |
+| W-05: review and moderation | W-04 | Review stored submissions, prevent self-approval, handle disputes, and preserve decisions. |
+| W-06: terminology glossary | W-05 | Publish accepted entries and keep pending or rejected records out of the accepted glossary. |
+| W-07: daily practice | W-05, W-02 | Use accepted content and store user progress; do not depend on unverified submissions. |
+| W-08: evaluation design and pilot preparation | W-01, TIL-8 | Define the baseline, sample, metrics, and measurement procedure before the pilot starts. |
+| W-09: integration testing and pilot | W-06, W-07, W-08 | Check the complete workflow and collect reproducible evaluation results. |
+| W-10: final evaluation and defense materials | W-09 | Analyze measured results, document limitations, and prepare the final submission. |
+
+Critical implementation sequence: W-01 -> W-02 -> W-04 -> W-05 -> W-06/W-07 -> W-09 -> W-10. W-03 must finish before collecting reusable content; W-08 can proceed alongside implementation once requirements and survey findings are available.
+
+## 5. Responsibility allocation
+
+Samat's tech lead role is documented in the README, and Ulykbek owns TIL-4. The remaining allocations are proposals, not claims about assignments already agreed in YouTrack. Each actual issue must have one accountable owner; another team member reviews the work before merging.
+
+| Team member | Responsibility | Deliverables / work items | Assignment status |
+|---|---|---|---|
+| Dovutbekov Ulykbek | Risk management and milestone planning | TIL-4, risk updates, dependency tracking, and schedule updates | Confirmed by TIL-4 |
+| Kosmurat Samat | Technical leadership | Technical coordination and review of architectural decisions | Confirmed by README |
+| Kosmurat Samat | Backend, integration, and release coordination | W-02, W-04; integration support for W-09; deployment, backups, and submission tags | Proposed |
+| Alpamys Abylaikhan | User research, interface, and evaluation | TIL-8; UI and prototype work; W-07 interface; W-08 and evaluation reporting in W-10 | Proposed |
+| Dovutbekov Ulykbek | Data governance, verification, and glossary | W-03, W-05, W-06; moderation rules and data quality checks | Proposed |
+| Konstantin N. Latuta | Supervisor feedback | Review scope, requirements, major decisions, and defense readiness; feedback recorded by the team | Supervisor identified in README; checkpoints to agree |
+
+Samat coordinates W-01 with input from all three students. Work on shared workflows remains collaborative; the accountable owner coordinates completion and review.
+
+## 6. Review and outstanding confirmations
+
+Review risks and dependencies weekly, before each defense, and after changes to scope, data sources, architecture, or team availability. Update ratings and responses using observed evidence; link material changes to YouTrack tasks and reviewed repository changes.
+
+Before closing all TIL-4 acceptance criteria:
+
+- Obtain and enter the dates of `pre-defense-1`, `pre-defense-2`, and `final-pre-defense`.
+- Confirm the proposed responsibility allocation with the team and reflect it in YouTrack.
+- Replace local work references with YouTrack IDs as the corresponding issues become available.
+- Obtain a team review of this document and link the resulting PR or commit in TIL-4.
