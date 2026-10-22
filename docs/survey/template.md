@@ -6,7 +6,7 @@ Task: TIL-2. The survey itself is run under TIL-8.
 > Do not invent respondents, numbers or quotes. If fewer people were surveyed than planned, say so.
 
 ## How to run the survey
-- Target group: people who use Kazakh in study or work (students, teachers, translators, native speakers, language learners).
+- Target group: people who use Kazakh in study or work (students, teachers, translators, NLP researchers, native speakers, language learners).
 - At least 3-5 respondents.
 - Before the survey, tell the respondent that the answers are used in a diploma project. Names are optional (anonymous is fine).
 - Record answers as given, without editing. Write conclusions separately, in the summary.
@@ -18,8 +18,9 @@ Task: TIL-2. The survey itself is run under TIL-8.
 |---|---|
 | Respondent number (R1, R2, ...) | |
 | Survey date | |
-| Role (student / teacher / translator / other) | |
+| Role (student / teacher / translator / NLP researcher / other) | |
 | How surveyed (in person / online form / chat) | |
+| Survey language (Russian / Kazakh / both) | |
 | Consent to use the answers | yes / no |
 
 ### B. Current practice
