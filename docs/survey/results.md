@@ -135,6 +135,8 @@ The evidence and summary are ready for team review. The owner should resolve the
 
 ## Questionnaire used in the survey
 
+Survey form: [Open the original questionnaire](https://forms.gle/X2LuCQrKMEGaQosS8).
+
 These are the English portions of the actual 16 question headers in the supplied workbook. Every header is displayed together in English, Kazakh, and Russian in the original form. This differs from the [11-question TIL-2 template](template.md); see the [coverage comparison](#relationship-to-til-2).
 
 ### Q1
