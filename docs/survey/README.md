@@ -4,16 +4,25 @@ Task: [TIL-8 - User survey](https://qosmuratsamat.youtrack.cloud/issue/TIL-8).
 
 Owner: Dovutbekov Ulykbek.
 
-Status: preparation only. No completed response records have been supplied in this directory. This does not establish whether interviews took place elsewhere. TIL-8 remains In Progress until real responses and their summary meet its acceptance criteria.
+Status: 14 supplied survey-response records and an English summary prepared for team review. TIL-8 remains In Progress until review and outstanding metadata questions are resolved.
+
+## Evidence and report
+
+- [Response records](responses.md): dated records R1-R14 with reported roles, the observed questionnaire language, and answers transcribed in English from the multilingual form options.
+- [Summary](summary.md): descriptive counts, verified findings, assumptions, limitations, and implications for requirements.
+- [Actual questionnaire](questionnaire-used.md): English portions of the 16 questions used in the supplied form.
+- [TIL-2 template](template.md): the original 11-question template, retained unchanged. The summary explains the differences from the used form.
+
+All project documentation here is in English. English translations of Russian free comments are explicitly labelled. The original XLSX is retained outside Git; no JSON dataset or analysis code is required to read these Markdown deliverables.
 
 ## Collecting responses
 
-Use the [TIL-2 template](template.md). A [Russian questionnaire](questionnaire-ru.md) provides the same eleven questions and six feature ratings for Russian-speaking respondents. Record the actual language used; Russian questionnaire text alone does not establish a respondent's language.
+Use the [TIL-2 template](template.md) for future collection. Record the actual language used; native language does not establish the language in which a person completed a survey.
 
 1. Survey at least 3 real user representatives; aim for 5. Appropriate roles include students, teachers, translators, researchers, native speakers, and learners who use Kazakh in study or work.
 2. Explain the diploma-project purpose and obtain permission to use anonymized answers in the project repository. Declining to answer is allowed. Do not publish a person's contact details, identifying chat screenshots, or answers without permission.
-3. Copy the questionnaire to `responses/R1.md`, `responses/R2.md`, and so on only when recording an actual respondent. A blank questionnaire is not a response and must not be counted.
-4. Enter the real survey date, role, method, language, and consent. Record answers in the language and wording supplied. Mark an unanswered question as `Not answered`; do not fill gaps or infer missing feature ratings. Keep any translation separately labelled.
+3. Add a respondent record only when recording an actual response. A blank questionnaire is not a response and must not be counted.
+4. Enter the real survey date, role, method, language, and consent. Preserve source meaning and explicitly label translations or use of English portions of multilingual options. Mark an unanswered question as `Not answered`; do not fill gaps or infer missing feature ratings.
 5. Review each record against the source supplied by the respondent. Preserve consent and source evidence outside the public repository when it contains personal information; do not invent source references.
 6. Update the [summary](summary.md) using only eligible completed response records. Link findings to respondent IDs and question numbers. Keep verified findings and assumptions separate.
 
@@ -25,10 +34,11 @@ For any count, state the question's actual number of answers. For feature rating
 
 ## Completion checklist
 
-- [ ] At least 3 real respondents are documented; the actual count is reported, including any shortfall from the target of 5.
-- [ ] Every counted response includes an actual date, role, survey language, and permission to use its anonymized answers.
-- [ ] Answers are based on the real source, with omissions and any translations labelled.
-- [ ] The summary separates verified findings from assumptions and links evidence to the response records.
-- [ ] Recruitment method, sample limits, contradictory answers, and implications for requirements are reported.
+- [x] The supplied export contains 14 response records, exceeding the numerical target of 3-5; identities were not independently authenticated.
+- [x] Every record has its actual recorded date, reported role, and the observed trilingual questionnaire language.
+- [ ] The owner has clarified any required individual completion-language metadata and consent evidence, which are not recorded in the export.
+- [x] Answers are based on the supplied source, with missing cells and English transcriptions/translations labelled.
+- [x] The summary separates verified findings from assumptions and links evidence to the response records.
+- [x] Sample limits, unknown recruitment details, contradictory answers, questionnaire differences, and implications for requirements are reported.
 - [ ] A different team member reviews the evidence and summary in the PR.
 - [ ] The PR or commit is linked from TIL-8 before marking the task complete.
