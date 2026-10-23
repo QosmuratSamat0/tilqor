@@ -16,7 +16,7 @@ This document covers risks, project milestones, task dependencies, and responsib
 
 The [proposal](proposal.md) excludes a real-user pilot. Evaluation is limited to a small test with 5-10 people and 100-200 records with reference labels, for example from a Kazakh teacher. If real votes are unavailable, use a clearly labelled simulation with documented vote-generation assumptions and a fixed seed. Report actual sample sizes and limitations; simulated votes are not evidence of real-user participation, usability, or production performance.
 
-The team names and the tech lead role come from the project README. Other work assignments below are proposed allocations for team agreement. The submission document specifies deliverables due on 24 October; it does not provide the dates of the later defenses. Unknown dates are marked TBD rather than presented as confirmed commitments.
+Team roles follow the [proposal](proposal.md). The task owners for TIL-4, TIL-8, and TIL-16 are reflected in Section 5; implementation allocations remain proposals for team agreement. The initial submission and pre-defense-1 are scheduled for 2026-10-24, as confirmed in the TIL-4 PR review. Dates of the later defenses remain TBD until the academic schedule is confirmed.
 
 ## 2. Risk assessment
 
@@ -55,13 +55,13 @@ References:
 
 ## 3. Project milestones
 
-The task deadline is 2026-10-23. The preparation document sets a submission deadline of 2026-10-24. It does not establish the exact defense dates below; TBD dates must be replaced with the academic schedule before the dated-milestones criterion can be marked complete.
+The task deadline is 2026-10-23. The initial submission and pre-defense-1 are scheduled for 2026-10-24. Dates for pre-defense-2 and final-pre-defense have not been supplied; those TBD dates must be replaced with the academic schedule before all dated-milestones criteria can be marked complete.
 
 | Milestone | Date | Deliverables and exit criteria | Coordinator |
 |---|---|---|---|
 | Risks and milestones document | 2026-10-23 | TIL-4 document prepared, reviewed by another team member, and linked from YouTrack; unresolved schedule information recorded. | Ulykbek |
 | Initial submission preparation | 2026-10-24 | README, proposal and scope, literature review, system and technology comparisons, initial requirements, diagrams, prototype, evaluation plan, YouTrack planning, and supervisor feedback are collected in the repository. | Samat |
-| pre-defense-1 | TBD - confirm against the academic schedule | Initial submission reviewed; required deliverables checked; known limitations recorded; the submitted commit identified by the tag `pre-defense-1`. | Samat |
+| pre-defense-1 | 2026-10-24 | Initial submission reviewed; required deliverables checked; known limitations recorded; the submitted commit identified by the tag `pre-defense-1`. | Samat |
 | pre-defense-2 | TBD - academic date not supplied | Integrated submission, verification, glossary, and daily practice workflows demonstrated; initial results from the small test (5-10 people, 100-200 reference-labelled records) or a clearly labelled simulation available; actual sample sizes and limitations documented; submission tagged `pre-defense-2`. | Samat |
 | final-pre-defense | TBD - academic date not supplied | Mandatory requirements verified, evaluation completed against the agreed baseline, documentation and setup instructions finalized, and critical defects resolved; submission tagged `final-pre-defense`. | Samat |
 
@@ -69,7 +69,7 @@ For each defense, provide the repository link, tag, completed work, known limita
 
 ## 4. Task dependencies
 
-The repository confirms TIL-1 (repository setup), TIL-2 (survey template), and TIL-8 (conducting the survey). The supplied task link identifies this document as TIL-4. W-01 through W-10 below are local planning references, not invented YouTrack issue IDs. Map them to actual issues when the implementation backlog is available.
+The repository documents TIL-1 (repository setup) and TIL-2 (survey template). [TIL-8](https://qosmuratsamat.youtrack.cloud/issue/TIL-8) is the separate user-survey task assigned to Ulykbek; it was reopened and its completion is not confirmed by the template. Survey responses and findings are submitted separately in [PR #8](https://github.com/QosmuratSamat0/tilqor/pull/8) for review; they are not yet part of the reviewed main baseline. This document addresses TIL-4. W-01 through W-10 below are local planning references, not invented YouTrack issue IDs. Map them to actual issues when the implementation backlog is available.
 
 | Work item | Depends on | Reason and completion condition |
 |---|---|---|
@@ -82,7 +82,7 @@ The repository confirms TIL-1 (repository setup), TIL-2 (survey template), and T
 | W-04: accounts and data submission | W-02, W-03 | Implement access roles and submissions with the required provenance fields. |
 | W-05: review and moderation | W-04 | Review stored submissions, prevent self-approval, handle disputes, and preserve decisions. |
 | W-06: terminology glossary | W-05 | Publish accepted entries and keep pending or rejected records out of the accepted glossary. |
-| W-07: daily practice | W-05, W-02 | Use accepted content and store user progress; do not depend on unverified submissions. |
+| W-07: daily practice catalogue | W-05, W-02 | Display top words, a word of the day, and connector hints from accepted content; do not depend on unverified submissions. Exercises and user-progress tracking are outside scope. |
 | W-08: evaluation design and small-test preparation | W-01, TIL-8 | Prepare 100-200 permitted reference-labelled records, the majority baseline, metrics, and measurement procedure; arrange 5-10 participants or document the clearly labelled simulation and fixed seed before evaluation starts. Survey evidence remains separate from evaluation votes. |
 | W-09: integration testing and bounded evaluation | W-06, W-07, W-08 | Check the complete workflow and collect reproducible results from the small test or clearly labelled simulation. Report actual people and record counts, vote provenance, unresolved cases, accuracy against reference labels, agreement, and limitations. |
 | W-10: final evaluation and defense materials | W-09 | Analyze measured results, document limitations, and prepare the final submission. |
@@ -91,14 +91,16 @@ Critical implementation sequence: W-01 -> W-02 -> W-04 -> W-05 -> W-06/W-07 -> W
 
 ## 5. Responsibility allocation
 
-Samat's tech lead role is documented in the README, and Ulykbek owns TIL-4. The remaining allocations are proposals, not claims about assignments already agreed in YouTrack. Each actual issue must have one accountable owner; another team member reviews the work before merging.
+The [proposal](proposal.md) identifies Samat as Tech lead, architect; Alpamys as Analyst, UX lead and developer; and Ulykbek as Requirements and research lead, developer. Ulykbek owns TIL-4 and TIL-8, and Alpamys owns TIL-16 (README), as confirmed in the TIL-4 PR review. The implementation and evaluation allocations marked Proposed below remain subject to team agreement. Each actual issue must have one accountable owner; another team member reviews the work before merging.
 
 | Team member | Responsibility | Deliverables / work items | Assignment status |
 |---|---|---|---|
 | Dovutbekov Ulykbek | Risk management and milestone planning | TIL-4, risk updates, dependency tracking, and schedule updates | Confirmed by TIL-4 |
-| Kosmurat Samat | Technical leadership | Technical coordination and review of architectural decisions | Confirmed by README |
+| Dovutbekov Ulykbek | User survey | [TIL-8](https://qosmuratsamat.youtrack.cloud/issue/TIL-8): collect real responses and document verified findings separately from assumptions | Assigned to Ulykbek in YouTrack; task reopened |
+| Kosmurat Samat | Tech lead, architect | Architecture, data quality model, DevOps, optional AI features, repository and YouTrack | Role defined in proposal |
+| Alpamys Abylaikhan | Project README | [TIL-16](https://qosmuratsamat.youtrack.cloud/issue/TIL-16): maintain the README and its required project information | Assigned to Alpamys in YouTrack |
 | Kosmurat Samat | Backend, integration, and release coordination | W-02, W-04; integration support for W-09; deployment, backups, and submission tags | Proposed |
-| Alpamys Abylaikhan | User research, interface, and evaluation | TIL-8; UI and prototype work; W-07 interface; W-08 and evaluation reporting in W-10 | Proposed |
+| Alpamys Abylaikhan | Interface and evaluation | UI and prototype work; W-07 interface; W-08 and evaluation reporting in W-10 | Proposed |
 | Dovutbekov Ulykbek | Data governance, verification, and glossary | W-03, W-05, W-06; moderation rules and data quality checks | Proposed |
 | Konstantin N. Latuta | Supervisor feedback | Review scope, requirements, major decisions, and defense readiness; feedback recorded by the team | Supervisor identified in README; checkpoints to agree |
 
@@ -110,7 +112,7 @@ Review risks and dependencies weekly, before each defense, and after changes to 
 
 Before closing all TIL-4 acceptance criteria:
 
-- Obtain and enter the dates of `pre-defense-1`, `pre-defense-2`, and `final-pre-defense`.
+- Obtain and enter the dates of `pre-defense-2` and `final-pre-defense`; `pre-defense-1` is confirmed for 2026-10-24.
 - Confirm the proposed responsibility allocation with the team and reflect it in YouTrack.
 - Replace local work references with YouTrack IDs as the corresponding issues become available.
 - Obtain a team review of this document and link the resulting PR or commit in TIL-4.
