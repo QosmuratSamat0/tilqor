@@ -14,7 +14,7 @@ Status: initial specification for team and supervisor review; not a statement th
 
 ## 1. Basis and scope
 
-The [proposal](proposal.md) defines the product scope and quality model. The [survey template](survey/template.md) defines questions, not verified user needs. As of 2026-10-23, `docs/survey/` contains only the questionnaire template and a placeholder; no completed responses or results summary are published there. PR review reports that [TIL-8](https://qosmuratsamat.youtrack.cloud/issue/TIL-8) is marked done, so its reported status and the repository evidence are inconsistent. Add the actual anonymized responses and evidence-based summary to `docs/survey/` and trace any requirement changes to those findings; if the evidence is unavailable, reopen TIL-8 until it is supplied. The tracker status could not be independently checked because YouTrack requires sign-in. Requirements below remain engineering proposals derived from the proposal, not survey-validated needs.
+The [proposal](proposal.md) defines the product scope and quality model. The [survey template](survey/template.md) defines questions, not verified user needs. As of 2026-10-23, `docs/survey/` contains only the questionnaire template and a placeholder; no completed responses or results summary are published there. [TIL-8](https://qosmuratsamat.youtrack.cloud/issue/TIL-8) was marked done without the required repository evidence and was returned to In Progress on 2026-10-23. Keep it open until actual anonymized responses and an evidence-based summary are published in `docs/survey/`. Trace any resulting requirement changes to those findings. Requirements below remain engineering proposals derived from the proposal, not survey-validated needs.
 
 The MVP covers Russian-to-Kazakh sentence contributions, Kazakh term variants, independent verification, a terminology dictionary, a daily practice catalogue, and accepted-data export in CSV and JSON. Daily practice means top words, a word of the day, and connector hints; an exercise engine and learning streaks are not required.
 
@@ -153,7 +153,7 @@ The verification plan (TIL-7) should reference these IDs and store evidence for 
 - Confirm the permission agreement, permitted sentence sources, and export release terms before accepting redistributable content. No dataset license is selected by this document.
 - Confirm term recommendation rules and the catalogue selection policy. Proposed catalogue default: top words sorted by accepted-version counted-review support with stable ID tie-breaking; daily selection derived deterministically from the configured date and eligible IDs; connector hints use moderator-tagged accepted examples. Withdrawn content overrides date stability.
 - Confirm the performance and recovery targets against the selected deployment environment before implementation acceptance.
-- Resolve the reported TIL-8 completion/evidence mismatch: publish actual anonymized responses and a summary in `docs/survey/`, or reopen the task. Incorporate findings when available and record whether they change a requirement; do not treat the task's done status as survey evidence.
+- Complete the reopened TIL-8 by publishing actual anonymized responses and a summary in `docs/survey/`. Incorporate findings when available and record whether they change a requirement; do not treat a tracker status as survey evidence.
 
 ## 8. Document acceptance checklist
 
