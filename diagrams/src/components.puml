@@ -1,0 +1,72 @@
+@startuml components
+' Component diagram, draft (TIL-6).
+' Technologies follow docs/tech-comparison.md (TIL-5); requirement IDs follow docs/requirements.md (TIL-11).
+title Tilqor - components (draft)
+
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+actor "User\n(browser)" as user
+
+node "Frontend: SPA (Vite + React, preliminary)" as fe {
+  component "Task and translation screens" as ui_tasks
+  component "Review screen" as ui_review
+  component "Dictionary and daily catalogue" as ui_dict
+}
+
+node "Backend: Django + Django REST Framework" as be {
+  component "REST API (DRF)\nauthentication, permissions\n(FR-01, FR-02, NFR-03)" as api
+
+  component "Accounts and roles\n(FR-01, FR-02)" as accounts
+  component "Tasks and contributions\n(FR-03 - FR-08, FR-13)" as contributions
+  component "Automatic checks\n(FR-07)" as checks
+
+  package "Verification engine" {
+    component "Review queue\n(FR-09, FR-10, FR-12)" as queue
+    component "Decision rule:\nweighted share >= 0.66,\nat least 2 people (FR-11)" as decision
+    component "Reputation and control tasks\n(FR-14, FR-15)" as reputation
+    component "Quality-model settings\n(FR-24)" as settings
+  }
+
+  component "Dictionary and daily catalogue\n(FR-17 - FR-19)" as dictionary
+  component "Export CSV / JSON\n(FR-20, NFR-12)" as export
+  component "Admin and moderation\n(Django admin; FR-12, FR-21, FR-24)" as admin
+  component "Evaluation command\n(baseline, Krippendorff's alpha;\nFR-25, FR-26)" as evaluation
+  component "Near-duplicate suggestions\n(optional, FR-23)" as dedup
+}
+
+database "PostgreSQL\nUser, SourceSentence, Task,\nContribution (versions), Review,\nTerm, settings, audit" as db
+
+cloud "AI service\n(optional)" as ai
+
+note right of db
+  All backend modules read and write
+  PostgreSQL through the Django ORM.
+  Only the most important links are drawn.
+end note
+
+user --> fe : HTTPS
+fe --> api : REST, JSON / HTTPS
+user --> admin : moderators only
+
+api --> accounts
+api --> contributions
+api --> queue
+api --> dictionary
+api --> export
+
+contributions --> checks
+checks ..> dedup : optional
+dedup ..> ai
+queue --> decision
+decision --> reputation
+decision ..> settings : reads thresholds\nand weights
+reputation ..> settings
+admin --> queue : resolves escalated\nrecords
+admin --> settings
+
+decision --> db : vote, decision, status\nand weight in one\ntransaction (NFR-02)
+dictionary --> db : reads accepted\nrecords only
+export --> db : reads accepted,\npermission-cleared\nrecords only
+evaluation --> db : reads stored votes
+@enduml

@@ -1,0 +1,74 @@
+@startuml use-case
+' Use case diagram (TIL-6).
+' Each use case is labelled with the requirement IDs from docs/requirements.md (TIL-11).
+title Tilqor - use cases
+
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+actor "Visitor" as visitor
+actor "Participant" as participant
+actor "Reviewer" as reviewer
+actor "Moderator / admin" as moderator
+
+participant -|> visitor
+reviewer -|> participant
+moderator -|> reviewer
+
+rectangle "Tilqor" {
+  package "Public data" {
+    usecase "Search the dictionary\n(FR-17, FR-18)" as UC_search
+    usecase "View the daily catalogue:\ntop words, word of the day,\nconnector hints (FR-19)" as UC_daily
+    usecase "Download accepted data\nin CSV / JSON (FR-20)" as UC_export
+  }
+
+  package "Contribution" {
+    usecase "Register and sign in\n(FR-01)" as UC_auth
+    usecase "Choose a task by domain\nand type (FR-03)" as UC_task
+    usecase "Translate a sentence ru -> kk\n(blind submission, FR-04)" as UC_translate
+    usecase "Choose or suggest\na term variant (FR-05)" as UC_term
+    usecase "Automatic checks: length,\nduplicates, Kazakh letters,\nRussian connectors (FR-07)" as UC_checks
+    usecase "See the status of\nown submissions (FR-08)" as UC_status
+    usecase "Edit a version marked\nneeds_edit (FR-13)" as UC_edit
+  }
+
+  package "Verification" {
+    usecase "Review a contribution:\naccept / reject / edit /\ndon't know (FR-09, FR-10)" as UC_review
+    usecase "Answer a control task\n(FR-15)" as UC_control
+    usecase "Weighted decision and\nreputation update\n(FR-11, FR-14)" as UC_decide
+  }
+
+  package "Moderation" {
+    usecase "Resolve an escalated\nrecord (FR-12)" as UC_resolve
+    usecase "Manage tasks and\nwithdraw content (FR-21)" as UC_manage
+    usecase "Manage roles and\nquality-model settings\n(FR-02, FR-24)" as UC_settings
+    usecase "Run the evaluation:\nbaseline and\nKrippendorff's alpha\n(FR-25, FR-26)" as UC_eval
+  }
+}
+
+visitor --> UC_search
+visitor --> UC_daily
+visitor --> UC_export
+
+participant --> UC_auth
+participant --> UC_task
+participant --> UC_translate
+participant --> UC_term
+participant --> UC_status
+participant --> UC_edit
+
+reviewer --> UC_review
+reviewer --> UC_control
+
+moderator --> UC_resolve
+moderator --> UC_manage
+moderator --> UC_settings
+moderator --> UC_eval
+
+UC_translate ..> UC_checks : <<include>>
+UC_term ..> UC_checks : <<include>>
+UC_review ..> UC_decide : <<include>>
+UC_control ..> UC_decide : <<include>>
+UC_resolve ..> UC_decide : <<extend>>\nno decision after 5 votes
+@enduml
