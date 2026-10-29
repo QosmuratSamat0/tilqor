@@ -161,8 +161,12 @@ docker run --rm -v "$PWD/diagrams:/data" plantuml/plantuml -tpng -o /data/png /d
 
 - `docs/`: proposal, literature review, comparisons, requirements, architecture, verification plan, risks, survey
 - `diagrams/`: PlantUML sources (`src/`) and images (`png/`)
-- `src/backend/`: Django project (`config/` settings and URLs, `core/` app), requirements and Dockerfile
-- `tests/backend/`: automated backend tests (pytest)
+- `src/backend/`: Django project, requirements and Dockerfile
+  - `config/`: settings and root URLs
+  - `apps/`: one Django app per domain: `core` (health), `accounts` (users, roles, auth API), `contributions` (sentences, tasks, contributions, versions), `glossary` (terms), `verification` (reviews, reviewer weight, quality settings)
+  - `common/`: shared code (role permissions, choices)
+  - Rule: views stay thin; business logic goes into each app's `services/` (and `domain/` for pure logic such as the decision rule)
+- `tests/backend/`: automated backend tests (pytest), grouped by app
 - `docker-compose.yml`: PostgreSQL and the backend for local development
 - `.github/workflows/ci.yml`: lint and tests on every pull request
 - `config.example.env`: example settings with placeholder values
