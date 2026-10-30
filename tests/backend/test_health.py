@@ -15,7 +15,7 @@ def test_health_reports_503_when_database_is_unavailable(client, monkeypatch):
     def broken_cursor(*args, **kwargs):
         raise OperationalError("database is down")
 
-    monkeypatch.setattr("core.views.connection.cursor", broken_cursor)
+    monkeypatch.setattr("apps.core.views.connection.cursor", broken_cursor)
 
     response = client.get(reverse("health"))
 
