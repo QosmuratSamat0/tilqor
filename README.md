@@ -41,7 +41,7 @@ Details: [proposal](docs/proposal.md), sections 10–12.
 
 ## Current status
 
-**Stage: pre-defense-1 (2026-10-24).** Analysis, design and planning are done; there is no runnable code yet.
+**Stage: MVP development (after pre-defense-1, 2026-10-24).** Analysis, design and planning are done. The backend skeleton (Django, PostgreSQL, Docker, CI) is in place; application features are being implemented.
 
 | Done | Next (pre-defense-2) |
 |---|---|
@@ -120,7 +120,36 @@ These are described in the [requirements](docs/requirements.md) and the [use cas
 
 ## Setup, run and test
 
-There is no runnable code yet. Setup, execution and testing instructions will be added here together with the first runnable version (planned for pre-defense-2). Configuration will use [`config.example.env`](config.example.env) with placeholder values; the real `.env` is never committed.
+The backend skeleton (Django + Django REST Framework + PostgreSQL) is runnable. Application features are being added in the MVP stage.
+
+**Requirements:** Docker Desktop; for running tests on your machine also Python 3.12.
+
+**1. Configure.** Copy the example configuration and replace the `change-me` values. The real `.env` is never committed.
+
+```bash
+cp config.example.env .env
+```
+
+**2. Run with Docker.** Starts PostgreSQL and the backend, applies migrations and serves the API on http://localhost:8000.
+
+```bash
+docker compose up --build
+```
+
+Check that it works: http://localhost:8000/api/health/ should return `{"status": "ok", "database": "ok"}`.
+
+**3. Run the tests.** The tests need PostgreSQL, so start only the database in Docker and run pytest locally:
+
+```bash
+docker compose up -d db
+python -m venv .venv
+.venv/Scripts/activate        # Windows; on macOS / Linux: source .venv/bin/activate
+pip install -r src/backend/requirements-dev.txt
+ruff check src/backend tests
+pytest -v
+```
+
+The same lint and tests run automatically on every pull request in GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 To regenerate the diagram images (requires Docker):
 
@@ -132,8 +161,10 @@ docker run --rm -v "$PWD/diagrams:/data" plantuml/plantuml -tpng -o /data/png /d
 
 - `docs/`: proposal, literature review, comparisons, requirements, architecture, verification plan, risks, survey
 - `diagrams/`: PlantUML sources (`src/`) and images (`png/`)
-- `src/`: application code (empty until implementation starts)
-- `tests/`: automated tests (empty until implementation starts)
+- `src/backend/`: Django project (`config/` settings and URLs, `core/` app), requirements and Dockerfile
+- `tests/backend/`: automated backend tests (pytest)
+- `docker-compose.yml`: PostgreSQL and the backend for local development
+- `.github/workflows/ci.yml`: lint and tests on every pull request
 - `config.example.env`: example settings with placeholder values
 
 ## Git rules
