@@ -1,7 +1,8 @@
 from decimal import Decimal
 
 from django.conf import settings
-from django.db import models
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
 from django.db.models import F, Q
 
 from apps.verification.choices import Decision
@@ -54,6 +55,48 @@ class QualitySettings(models.Model):
     def __str__(self):
         return f"Quality settings v{self.version}" + (" (active)" if self.is_active else "")
 
+    def clean(self):
+        super().clean()
+        errors = {}
+        if not 3 <= self.min_votes <= self.max_votes <= 5:
+            errors["min_votes"] = "Require 3 <= min_votes <= max_votes <= 5."
+        if not 2 <= self.min_supporters <= self.min_votes:
+            errors["min_supporters"] = "Require 2 <= min_supporters <= min_votes."
+        if (
+            not WEIGHT_MIN
+            <= self.weight_min
+            <= self.weight_initial
+            <= self.weight_max
+            <= WEIGHT_MAX
+        ):
+            errors["weight_initial"] = "Weights must be ordered within 0.50 to 2.00."
+        if not Decimal("0.5") < self.threshold <= 1:
+            errors["threshold"] = "Threshold must be greater than 0.5 and at most 1."
+        for name in ("match_step", "mismatch_step", "control_correct_step", "control_wrong_step"):
+            if getattr(self, name) < 0:
+                errors[name] = "Steps cannot be negative."
+        if errors:
+            raise ValidationError(errors)
+        self._check_immutable()
+
+    def _check_immutable(self):
+        if not self.pk or not self.reviews.exists():
+            return
+        previous = type(self).objects.get(pk=self.pk)
+        for field in self._meta.concrete_fields:
+            if field.name not in {"is_active", "created_at"} and (
+                getattr(previous, field.attname) != getattr(self, field.attname)
+            ):
+                raise ValidationError("Used settings are immutable. Create a new settings version.")
+
+    @transaction.atomic
+    def save(self, *args, **kwargs):
+        if self.pk:
+            # Synchronize admin edits with the first review pinning this row.
+            type(self).objects.select_for_update().filter(pk=self.pk).first()
+        self._check_immutable()
+        return super().save(*args, **kwargs)
+
 
 class ReviewerProfile(models.Model):
     """A reviewer's current weight (reputation)."""
@@ -93,6 +136,10 @@ class Review(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Audit markers make standard finalization and immediate control feedback idempotent.
+    reputation_applied_at = models.DateTimeField(null=True, blank=True)
+    matched_final = models.BooleanField(null=True, blank=True)
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -106,3 +153,25 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.reviewer} → {self.decision} on {self.version}"
+
+
+class Finalization(models.Model):
+    """One durable result per immutable version, including moderator overrides."""
+
+    version = models.OneToOneField(
+        "contributions.ContributionVersion",
+        on_delete=models.PROTECT,
+        related_name="finalization",
+    )
+    decision = models.CharField(
+        max_length=20, choices=[(d, d.label) for d in Decision if d != Decision.DONT_KNOW]
+    )
+    quality_settings = models.ForeignKey(QualitySettings, on_delete=models.PROTECT)
+    moderator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+    )
+    reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)

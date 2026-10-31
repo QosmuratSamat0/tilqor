@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <p>Resolve the following escalated versions:</p>
+  <ul>
+    {% for version in versions %}
+    <li>{{ version }}<input type="hidden" name="_selected_action" value="{{ version.pk }}"></li>
+    {% endfor %}
+  </ul>
+  <input type="hidden" name="action" value="resolve_escalated">
+  <input type="hidden" name="select_across" value="0">
+  <button type="submit" name="apply_resolution" value="1">Apply resolution</button>
+</form>
+{% endblock %}
