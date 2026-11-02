@@ -82,21 +82,36 @@ class PreferenceSerializer(serializers.ModelSerializer):
 
 
 class OwnVersionSerializer(serializers.ModelSerializer):
-    decision_reason = serializers.SerializerMethodField()
+    decision_reasons = serializers.SerializerMethodField()
 
     class Meta:
         model = ContributionVersion
-        fields = ("id", "number", "text_kk", "status", "decision_reason", "created_at")
+        fields = ("id", "number", "text_kk", "status", "decision_reasons", "created_at")
         read_only_fields = fields
 
-    def get_decision_reason(self, version: ContributionVersion) -> str | None:
+    def get_decision_reasons(self, version: ContributionVersion) -> list[str]:
         try:
             finalization = version.finalization
         except ObjectDoesNotExist:
-            return None
-        if finalization and finalization.reason:
-            return finalization.reason
-        return None
+            return []
+        if finalization is None:
+            return []
+        reasons: list[str] = []
+        seen: set[str] = set()
+        reviews = (
+            version.reviews.all()
+            if "reviews" in getattr(version, "_prefetched_objects_cache", {})
+            else version.reviews.order_by("created_at", "pk")
+        )
+        candidates = [finalization.reason]
+        candidates.extend(
+            review.reason for review in reviews if review.decision == finalization.decision
+        )
+        for reason in candidates:
+            if reason and reason not in seen:
+                seen.add(reason)
+                reasons.append(reason)
+        return reasons
 
 
 class OwnContributionSerializer(serializers.ModelSerializer):

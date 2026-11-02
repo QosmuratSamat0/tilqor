@@ -104,57 +104,115 @@ def test_kazakh_and_russian_unicode_survives_round_trip(
     assert me_resp.data[0]["text_ru"] == "Проверка всех букв: ё, й, щ, ъ, ы, э, ю, я."
 
 
-def test_own_submissions_show_all_statuses_and_moderator_reason_only_to_author(
+def test_own_submissions_show_all_statuses_and_matching_reasons_without_reviewer_leak(
     api_client, user_factory, make_translation_task, add_version
 ):
     author = user_factory(username="author_one")
     other_user = user_factory(username="author_two")
-    moderator = user_factory(role="moderator")
+    moderator = user_factory(username="mod_secret", role="moderator")
+    reviewers = [
+        user_factory(username=f"rev_secret_{i}", role="reviewer") for i in range(5)
+    ]
     settings = QualitySettings.objects.get(is_active=True)
 
-    statuses = ["submitted", "in_review", "accepted", "rejected", "needs_edit"]
-    created_versions = {}
-    for status_value in statuses:
-        task = make_translation_task()
-        version = add_version(
-            task,
-            text_kk=f"Мәтін мәртебесі {status_value}",
-            author=author,
-            status=status_value,
-        )
-        created_versions[status_value] = version
+    submitted_v = add_version(
+        make_translation_task(), text_kk="Жіберілген мәтін", author=author
+    )
+    in_review_v = add_version(
+        make_translation_task(), text_kk="Тексерілудегі мәтін", author=author
+    )
+    submit_review(
+        reviewer=reviewers[0],
+        version_id=in_review_v.pk,
+        decision="reject",
+        reason="Әлі шешім жоқ",
+    )
 
+    accepted_v = add_version(
+        make_translation_task(),
+        text_kk="Қабылданған мәтін",
+        author=author,
+        status="accepted",
+    )
     Finalization.objects.create(
-        version=created_versions["accepted"],
+        version=accepted_v,
         decision="accept",
         quality_settings=settings,
         reason="",
     )
-    Finalization.objects.create(
-        version=created_versions["rejected"],
+
+    auto_rejected_v = add_version(
+        make_translation_task(), text_kk="Автоматты қабылданбаған мәтін", author=author
+    )
+    submit_review(
+        reviewer=reviewers[0],
+        version_id=auto_rejected_v.pk,
+        decision="edit",
+        reason="Бұл edit себебі көрінбеуі тиіс.",
+    )
+    submit_review(
+        reviewer=reviewers[1],
+        version_id=auto_rejected_v.pk,
         decision="reject",
-        quality_settings=settings,
-        moderator=moderator,
-        reason="Грамматикалық қате бар.",
+        reason="Сөз тәртібі қате.",
+    )
+    submit_review(
+        reviewer=reviewers[2],
+        version_id=auto_rejected_v.pk,
+        decision="reject",
+        reason="Мағынасы бұрмаланған.",
     )
 
-    other_task = make_translation_task()
-    add_version(other_task, text_kk="Басқа автордың аудармасы", author=other_user)
+    mod_needs_edit_v = add_version(
+        make_translation_task(), text_kk="Модератор шешкен мәтін", author=author
+    )
+    for reviewer, decision, reason in zip(
+        reviewers,
+        ["accept", "reject", "edit", "accept", "edit"],
+        ["", "Қате аударма", "Жалғауын түзету керек.", "", "Стилін жөндеу қажет."],
+        strict=True,
+    ):
+        submit_review(
+            reviewer=reviewer,
+            version_id=mod_needs_edit_v.pk,
+            decision=decision,
+            reason=reason,
+        )
+    resolve_version(
+        moderator=moderator,
+        version_id=mod_needs_edit_v.pk,
+        decision="edit",
+        reason="Модератор: терминді нақтылаңыз.",
+    )
+
+    add_version(make_translation_task(), text_kk="Басқа автордың аудармасы", author=other_user)
 
     api_client.force_authenticate(author)
     response = api_client.get(f"{CONTRIBUTIONS_URL}me/")
     assert response.status_code == 200
     assert len(response.data) == 5
 
-    by_status = {
-        row["versions"][0]["status"]: row["versions"][0] for row in response.data
-    }
-    assert set(by_status) == set(statuses)
-    assert by_status["submitted"]["decision_reason"] is None
-    assert by_status["in_review"]["decision_reason"] is None
-    assert by_status["accepted"]["decision_reason"] is None
-    assert by_status["rejected"]["decision_reason"] == "Грамматикалық қате бар."
-    assert by_status["needs_edit"]["decision_reason"] is None
+    by_status = {row["versions"][0]["status"]: row["versions"][0] for row in response.data}
+    assert set(by_status) == {"submitted", "in_review", "accepted", "rejected", "needs_edit"}
+    assert by_status["submitted"]["id"] == submitted_v.pk
+    assert by_status["submitted"]["decision_reasons"] == []
+    assert by_status["in_review"]["decision_reasons"] == []
+    assert by_status["accepted"]["decision_reasons"] == []
+    assert by_status["rejected"]["decision_reasons"] == [
+        "Сөз тәртібі қате.",
+        "Мағынасы бұрмаланған.",
+    ]
+    assert by_status["needs_edit"]["decision_reasons"] == [
+        "Модератор: терминді нақтылаңыз.",
+        "Жалғауын түзету керек.",
+        "Стилін жөндеу қажет.",
+    ]
+
+    raw_json = response.content.decode("utf-8")
+    for secret_user in [moderator, *reviewers]:
+        assert secret_user.username not in raw_json
+        assert secret_user.email not in raw_json
+    assert "Бұл edit себебі көрінбеуі тиіс." not in raw_json
 
     for row in response.data:
         for version_row in row["versions"]:
@@ -163,7 +221,7 @@ def test_own_submissions_show_all_statuses_and_moderator_reason_only_to_author(
                 "number",
                 "text_kk",
                 "status",
-                "decision_reason",
+                "decision_reasons",
                 "created_at",
             }
 
@@ -171,6 +229,50 @@ def test_own_submissions_show_all_statuses_and_moderator_reason_only_to_author(
     other_resp = api_client.get(f"{CONTRIBUTIONS_URL}me/")
     assert len(other_resp.data) == 1
     assert other_resp.data[0]["versions"][0]["text_kk"] == "Басқа автордың аудармасы"
+
+
+def test_own_submissions_prefetch_avoids_n_plus_one_queries(
+    api_client, django_assert_max_num_queries, user_factory, make_translation_task, add_version
+):
+    author = user_factory()
+    reviewers = [user_factory(role="reviewer") for _ in range(3)]
+    settings = QualitySettings.objects.get(is_active=True)
+
+    for idx in range(3):
+        task = make_translation_task()
+        v1 = add_version(
+            task,
+            text_kk=f"Бірінші нұсқа {idx}",
+            author=author,
+            number=1,
+            status="needs_edit",
+        )
+        Finalization.objects.create(
+            version=v1,
+            decision="edit",
+            quality_settings=settings,
+            reason=f"Себеп {idx}",
+        )
+        v2 = add_version(
+            task,
+            text_kk=f"Екінші нұсқа {idx}",
+            author=author,
+            number=2,
+        )
+        for rev_idx, reviewer in enumerate(reviewers):
+            submit_review(
+                reviewer=reviewer,
+                version_id=v2.pk,
+                decision="reject",
+                reason=f"Пікір {idx}-{rev_idx}",
+            )
+
+    api_client.force_authenticate(author)
+    with django_assert_max_num_queries(4):
+        response = api_client.get(f"{CONTRIBUTIONS_URL}me/")
+    assert response.status_code == 200
+    assert len(response.data) == 3
+    assert all(len(item["versions"]) == 2 for item in response.data)
 
 
 def test_new_version_after_needs_edit_preserves_history_and_enforces_rules(
@@ -223,9 +325,9 @@ def test_new_version_after_needs_edit_preserves_history_and_enforces_rules(
 
     me_resp = api_client.get(f"{CONTRIBUTIONS_URL}me/")
     versions_data = me_resp.data[0]["versions"]
-    assert [(v["number"], v["status"], v["decision_reason"]) for v in versions_data] == [
-        (1, "needs_edit", "Терминді нақтылау керек."),
-        (2, "submitted", None),
+    assert [(v["number"], v["status"], v["decision_reasons"]) for v in versions_data] == [
+        (1, "needs_edit", ["Терминді нақтылау керек.", "Себеп"]),
+        (2, "submitted", []),
     ]
 
     for non_editable_status in ("submitted", "in_review", "accepted", "rejected"):
@@ -241,4 +343,3 @@ def test_new_version_after_needs_edit_preserves_history_and_enforces_rules(
             {"text_kk": "Жаңа мәтін нұсқасы."},
         )
         assert conflict_resp.status_code == 409
-

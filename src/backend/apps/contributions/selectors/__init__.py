@@ -5,6 +5,7 @@ from django.db.models import Prefetch
 from apps.contributions.domain import shuffle_variants
 from apps.contributions.errors import ContributionError
 from apps.contributions.models import Contribution, ContributionVersion, Task
+from apps.verification.models import Review
 from common.choices import Domain
 
 
@@ -58,7 +59,12 @@ def task_detail(*, task_id: int, user, rng: Random | None = None) -> Task | None
 
 def own_contributions(user):
     """Return all contributions authored by `user` with their version history (FR-08, FR-13)."""
-    version_qs = ContributionVersion.objects.select_related("finalization").order_by("number")
+    review_qs = Review.objects.order_by("created_at", "pk")
+    version_qs = (
+        ContributionVersion.objects.select_related("finalization")
+        .prefetch_related(Prefetch("reviews", queryset=review_qs))
+        .order_by("number")
+    )
     return (
         Contribution.objects.filter(author=user)
         .select_related("task__source_sentence", "task__term")
