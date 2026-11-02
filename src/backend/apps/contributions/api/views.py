@@ -1,6 +1,8 @@
 from random import Random
 
 from django.conf import settings
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -9,6 +11,7 @@ from rest_framework.views import APIView
 from apps.contributions.api.serializers import (
     ContributionSubmissionSerializer,
     OwnContributionSerializer,
+    PaginatedTaskListSerializer,
     PreferenceInputSerializer,
     PreferenceSerializer,
     TaskDetailSerializer,
@@ -17,8 +20,11 @@ from apps.contributions.api.serializers import (
     VersionSubmissionSerializer,
 )
 from apps.contributions.errors import ContributionError
+from apps.contributions.models import Task
 from apps.contributions.selectors import active_tasks, own_contributions, task_detail
 from apps.contributions.services import set_preference, submit_contribution, submit_version
+from common.choices import Domain
+from common.serializers import ErrorSerializer
 
 
 class TaskListPagination(PageNumberPagination):
@@ -31,6 +37,41 @@ class TaskListPagination(PageNumberPagination):
 class TaskListView(APIView):
     pagination_class = TaskListPagination
 
+    @extend_schema(
+        tags=["tasks"],
+        operation_id="tasks_list",
+        parameters=[
+            OpenApiParameter(
+                name="domain",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                enum=Domain.values,
+                required=False,
+                description="Filter active tasks by domain.",
+            ),
+            OpenApiParameter(
+                name="type",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                enum=Task.Type.values,
+                required=False,
+                description="Filter active tasks by task type.",
+            ),
+            OpenApiParameter(
+                name="page",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="1-based page number.",
+            ),
+        ],
+        responses={
+            200: PaginatedTaskListSerializer,
+            400: ErrorSerializer,
+            403: ErrorSerializer,
+            404: ErrorSerializer,
+        },
+    )
     def get(self, request):
         domain = request.query_params.get("domain")
         task_type = request.query_params.get("type")
@@ -44,6 +85,15 @@ class TaskListView(APIView):
 
 
 class TaskDetailView(APIView):
+    @extend_schema(
+        tags=["tasks"],
+        operation_id="tasks_retrieve",
+        responses={
+            200: TaskDetailSerializer,
+            403: ErrorSerializer,
+            404: ErrorSerializer,
+        },
+    )
     def get(self, request, task_id: int):
         task = task_detail(task_id=task_id, user=request.user, rng=Random())
         if task is None:
@@ -52,6 +102,16 @@ class TaskDetailView(APIView):
 
 
 class TaskContributionView(APIView):
+    @extend_schema(
+        tags=["tasks"],
+        request=TextInputSerializer,
+        responses={
+            201: ContributionSubmissionSerializer,
+            400: ErrorSerializer,
+            403: ErrorSerializer,
+            409: ErrorSerializer,
+        },
+    )
     def post(self, request, task_id: int):
         serializer = TextInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -70,6 +130,16 @@ class TaskContributionView(APIView):
 
 
 class TaskPreferenceView(APIView):
+    @extend_schema(
+        tags=["tasks"],
+        request=PreferenceInputSerializer,
+        responses={
+            200: PreferenceSerializer,
+            400: ErrorSerializer,
+            403: ErrorSerializer,
+            409: ErrorSerializer,
+        },
+    )
     def put(self, request, task_id: int):
         serializer = PreferenceInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -85,12 +155,29 @@ class TaskPreferenceView(APIView):
 
 
 class MyContributionsView(APIView):
+    @extend_schema(
+        tags=["contributions"],
+        responses={
+            200: OwnContributionSerializer(many=True),
+            403: ErrorSerializer,
+        },
+    )
     def get(self, request):
         contributions = own_contributions(request.user)
         return Response(OwnContributionSerializer(contributions, many=True).data)
 
 
 class ContributionVersionView(APIView):
+    @extend_schema(
+        tags=["contributions"],
+        request=TextInputSerializer,
+        responses={
+            201: VersionSubmissionSerializer,
+            400: ErrorSerializer,
+            403: ErrorSerializer,
+            409: ErrorSerializer,
+        },
+    )
     def post(self, request, contribution_id: int):
         serializer = TextInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
