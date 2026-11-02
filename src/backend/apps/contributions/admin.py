@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
 
 from apps.contributions.models import (
     Contribution,
@@ -8,6 +9,20 @@ from apps.contributions.models import (
     VariantPreference,
 )
 from apps.verification.admin_actions import ControlVersionForm, resolve_escalated
+
+
+@admin.action(description="Activate selected tasks", permissions=["change"])
+def activate_tasks(modeladmin, request, queryset):
+    if not request.user.is_moderator:
+        raise PermissionDenied
+    queryset.update(is_active=True)
+
+
+@admin.action(description="Deactivate selected tasks", permissions=["change"])
+def deactivate_tasks(modeladmin, request, queryset):
+    if not request.user.is_moderator:
+        raise PermissionDenied
+    queryset.update(is_active=False)
 
 
 @admin.register(SourceSentence)
@@ -21,6 +36,20 @@ class SourceSentenceAdmin(admin.ModelAdmin):
 class TaskAdmin(admin.ModelAdmin):
     list_display = ("id", "type", "domain", "source_sentence", "term", "is_active")
     list_filter = ("type", "domain", "is_active")
+    actions = [activate_tasks, deactivate_tasks]
+
+    def has_add_permission(self, request):
+        return request.user.is_moderator and super().has_add_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_moderator and super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        return (
+            request.user.is_moderator
+            and not (obj and obj.contributions.exists())
+            and super().has_delete_permission(request, obj)
+        )
 
 
 class ContributionVersionInline(admin.TabularInline):
