@@ -10,6 +10,7 @@ from apps.contributions.errors import (
     ContributionForbidden,
 )
 from apps.contributions.models import Contribution, ContributionVersion, Task, VariantPreference
+from apps.contributions.selectors import listed_task_variants
 
 
 @dataclass(frozen=True)
@@ -110,17 +111,7 @@ def set_preference(*, user, task_id: int, version_id: int) -> VariantPreference:
         raise ContributionConflict("Task is not active.", field="task")
     if task.type != Task.Type.TERM:
         raise ContributionError("Preferences can only be set on term tasks.", field="task")
-    version = (
-        ContributionVersion.objects.select_related("contribution")
-        .filter(
-            pk=version_id,
-            contribution__task=task,
-            is_control=False,
-            is_withdrawn=False,
-        )
-        .exclude(status=ContributionVersion.Status.REJECTED)
-        .first()
-    )
+    version = listed_task_variants(task).filter(pk=version_id).first()
     if version is None:
         raise ContributionError(
             "Version must belong to this task and be a listed variant.",

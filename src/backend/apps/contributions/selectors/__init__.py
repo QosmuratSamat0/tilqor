@@ -1,6 +1,6 @@
 from random import Random
 
-from django.db.models import Prefetch
+from django.db.models import Exists, OuterRef, Prefetch
 
 from apps.contributions.domain import shuffle_variants
 from apps.contributions.errors import ContributionError
@@ -23,17 +23,30 @@ def active_tasks(*, domain: str | None = None, task_type: str | None = None):
     return queryset.order_by("pk")
 
 
-def visible_variants(
-    *, task: Task, user, rng: Random | None = None
-) -> list[ContributionVersion]:
-    """Return variants visible to `user` for `task` (FR-04 blind flow, FR-05 shuffled terms)."""
-    base = (
+def listed_task_variants(task: Task):
+    """Return the latest version per contribution on `task` that is eligible to be listed."""
+    newer_version = ContributionVersion.objects.filter(
+        contribution_id=OuterRef("contribution_id"),
+        number__gt=OuterRef("number"),
+    )
+    return (
         ContributionVersion.objects.filter(
             contribution__task=task,
             is_control=False,
             is_withdrawn=False,
         )
+        .annotate(has_newer=Exists(newer_version))
+        .filter(has_newer=False)
         .exclude(status=ContributionVersion.Status.REJECTED)
+    )
+
+
+def visible_variants(
+    *, task: Task, user, rng: Random | None = None
+) -> list[ContributionVersion]:
+    """Return variants visible to `user` for `task` (FR-04 blind flow, FR-05 shuffled terms)."""
+    base = (
+        listed_task_variants(task)
         .select_related("contribution__author")
         .order_by("created_at", "pk")
     )

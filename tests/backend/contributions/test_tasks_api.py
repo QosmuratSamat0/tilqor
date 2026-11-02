@@ -301,3 +301,46 @@ def test_term_preference_create_replace_and_validation(
     assert "task" in trans_resp.data
     assert VariantPreference.objects.get(user=user, task=term_task).version_id == v2.pk
 
+
+def test_only_latest_version_of_each_contribution_is_a_variant(
+    api_client, user_factory, make_term_task, add_version
+):
+    task = make_term_task()
+    author_one = user_factory()
+    author_two = user_factory()
+
+    v1_old = add_version(
+        task, text_kk="Ескі нұсқа", author=author_one, number=1, status="needs_edit"
+    )
+    v2_current = add_version(
+        task, text_kk="Жаңартылған нұсқа", author=author_one, number=2, status="submitted"
+    )
+
+    superseded_by_rejected = add_version(
+        task, text_kk="Алғашқы нұсқа", author=author_two, number=1, status="needs_edit"
+    )
+    v2_rejected = add_version(
+        task, text_kk="Қабылданбаған екінші нұсқа", author=author_two, number=2, status="rejected"
+    )
+
+    viewer = user_factory()
+    api_client.force_authenticate(viewer)
+
+    detail = api_client.get(f"{TASKS_URL}{task.pk}/")
+    assert detail.status_code == 200
+    assert [v["id"] for v in detail.data["variants"]] == [v2_current.pk]
+
+    for disallowed in (v1_old, superseded_by_rejected, v2_rejected):
+        resp = api_client.put(
+            f"{TASKS_URL}{task.pk}/preference/",
+            {"version_id": disallowed.pk},
+        )
+        assert resp.status_code == 400
+        assert "version_id" in resp.data
+
+    ok_pref = api_client.put(
+        f"{TASKS_URL}{task.pk}/preference/",
+        {"version_id": v2_current.pk},
+    )
+    assert ok_pref.status_code == 200
+    assert ok_pref.data["version_id"] == v2_current.pk
