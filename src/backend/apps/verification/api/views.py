@@ -13,7 +13,7 @@ from apps.verification.selectors import review_queue, reviewer_stats
 from apps.verification.services import submit_review
 from apps.verification.services.errors import ReviewError
 from common.permissions import IsReviewer
-from common.serializers import ErrorSerializer
+from common.serializers import AnyErrorSerializer, DetailErrorSerializer
 
 
 class ReviewView(APIView):
@@ -24,9 +24,9 @@ class ReviewView(APIView):
         request=ReviewInputSerializer,
         responses={
             201: ReviewSerializer,
-            400: ErrorSerializer,
-            403: ErrorSerializer,
-            409: ErrorSerializer,
+            400: AnyErrorSerializer,
+            403: DetailErrorSerializer,
+            409: DetailErrorSerializer,
         },
     )
     def post(self, request):
@@ -44,7 +44,7 @@ class QueueView(APIView):
 
     @extend_schema(
         tags=["reviews"],
-        responses={200: QueueSerializer(many=True), 403: ErrorSerializer},
+        responses={200: QueueSerializer(many=True), 403: DetailErrorSerializer},
     )
     def get(self, request):
         return Response(QueueSerializer(review_queue(request.user)[:20], many=True).data)
@@ -55,7 +55,7 @@ class StatsView(APIView):
 
     @extend_schema(
         tags=["reviews"],
-        responses={200: StatsSerializer, 403: ErrorSerializer},
+        responses={200: StatsSerializer, 403: DetailErrorSerializer},
     )
     def get(self, request):
         return Response(StatsSerializer(reviewer_stats(request.user)).data)

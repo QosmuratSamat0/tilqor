@@ -24,7 +24,11 @@ from apps.contributions.models import Task
 from apps.contributions.selectors import active_tasks, own_contributions, task_detail
 from apps.contributions.services import set_preference, submit_contribution, submit_version
 from common.choices import Domain
-from common.serializers import ErrorSerializer
+from common.serializers import (
+    AnyErrorSerializer,
+    DetailErrorSerializer,
+    FieldErrorsSerializer,
+)
 
 
 class TaskListPagination(PageNumberPagination):
@@ -67,9 +71,9 @@ class TaskListView(APIView):
         ],
         responses={
             200: PaginatedTaskListSerializer,
-            400: ErrorSerializer,
-            403: ErrorSerializer,
-            404: ErrorSerializer,
+            400: FieldErrorsSerializer,
+            403: DetailErrorSerializer,
+            404: DetailErrorSerializer,
         },
     )
     def get(self, request):
@@ -90,8 +94,8 @@ class TaskDetailView(APIView):
         operation_id="tasks_retrieve",
         responses={
             200: TaskDetailSerializer,
-            403: ErrorSerializer,
-            404: ErrorSerializer,
+            403: DetailErrorSerializer,
+            404: DetailErrorSerializer,
         },
     )
     def get(self, request, task_id: int):
@@ -107,9 +111,9 @@ class TaskContributionView(APIView):
         request=TextInputSerializer,
         responses={
             201: ContributionSubmissionSerializer,
-            400: ErrorSerializer,
-            403: ErrorSerializer,
-            409: ErrorSerializer,
+            400: FieldErrorsSerializer,
+            403: DetailErrorSerializer,
+            409: FieldErrorsSerializer,
         },
     )
     def post(self, request, task_id: int):
@@ -135,9 +139,9 @@ class TaskPreferenceView(APIView):
         request=PreferenceInputSerializer,
         responses={
             200: PreferenceSerializer,
-            400: ErrorSerializer,
-            403: ErrorSerializer,
-            409: ErrorSerializer,
+            400: FieldErrorsSerializer,
+            403: DetailErrorSerializer,
+            409: FieldErrorsSerializer,
         },
     )
     def put(self, request, task_id: int):
@@ -159,7 +163,7 @@ class MyContributionsView(APIView):
         tags=["contributions"],
         responses={
             200: OwnContributionSerializer(many=True),
-            403: ErrorSerializer,
+            403: DetailErrorSerializer,
         },
     )
     def get(self, request):
@@ -173,9 +177,9 @@ class ContributionVersionView(APIView):
         request=TextInputSerializer,
         responses={
             201: VersionSubmissionSerializer,
-            400: ErrorSerializer,
-            403: ErrorSerializer,
-            409: ErrorSerializer,
+            400: FieldErrorsSerializer,
+            403: AnyErrorSerializer,
+            409: FieldErrorsSerializer,
         },
     )
     def post(self, request, contribution_id: int):

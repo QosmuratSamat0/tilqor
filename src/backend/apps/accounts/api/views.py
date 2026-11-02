@@ -13,7 +13,11 @@ from apps.accounts.api.serializers import (
     RegisterSerializer,
 )
 from apps.accounts.services import register_user
-from common.serializers import ErrorSerializer
+from common.serializers import (
+    AnyErrorSerializer,
+    DetailErrorSerializer,
+    FieldErrorsSerializer,
+)
 
 
 @method_decorator(ensure_csrf_cookie, name="get")
@@ -33,7 +37,7 @@ class RegisterView(APIView):
     @extend_schema(
         tags=["auth"],
         request=RegisterSerializer,
-        responses={201: CurrentUserSerializer, 400: ErrorSerializer},
+        responses={201: CurrentUserSerializer, 400: FieldErrorsSerializer},
     )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -49,7 +53,7 @@ class LoginView(APIView):
     @extend_schema(
         tags=["auth"],
         request=LoginSerializer,
-        responses={200: CurrentUserSerializer, 400: ErrorSerializer},
+        responses={200: CurrentUserSerializer, 400: AnyErrorSerializer},
     )
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -69,7 +73,7 @@ class LogoutView(APIView):
     @extend_schema(
         tags=["auth"],
         request=None,
-        responses={204: None, 403: ErrorSerializer},
+        responses={204: None, 403: DetailErrorSerializer},
     )
     def post(self, request):
         logout(request)
@@ -81,7 +85,7 @@ class CurrentUserView(APIView):
 
     @extend_schema(
         tags=["auth"],
-        responses={200: CurrentUserSerializer, 403: ErrorSerializer},
+        responses={200: CurrentUserSerializer, 403: DetailErrorSerializer},
     )
     def get(self, request):
         return Response(CurrentUserSerializer(request.user).data)
