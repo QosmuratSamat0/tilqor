@@ -2,10 +2,12 @@
 
 import re
 
+import pytest
 import yaml
 from django.urls import URLPattern, URLResolver
 
-from apps.contributions.models import Task
+from apps.accounts.models import User
+from apps.contributions.models import Contribution, ContributionVersion, SourceSentence, Task
 from common.choices import Domain
 from config.urls import urlpatterns
 
@@ -100,3 +102,76 @@ def test_no_response_component_exposes_password(api_client):
         if not name.endswith("Request"):
             properties = component.get("properties", {})
             assert "password" not in properties
+
+
+def test_error_components_and_endpoint_error_references(api_client):
+    schema = yaml.safe_load(api_client.get("/api/schema/").content)
+    schemas = schema["components"]["schemas"]
+
+    assert "DetailError" in schemas
+    assert "FieldErrors" in schemas
+    assert schemas["DetailError"]["properties"]["detail"]["type"] == "string"
+    assert schemas["DetailError"]["example"] == {
+        "detail": "Authentication credentials were not provided."
+    }
+    assert schemas["FieldErrors"]["additionalProperties"] == {
+        "type": "array",
+        "items": {"type": "string"},
+    }
+    assert schemas["FieldErrors"]["example"] == {"text_kk": ["Text cannot be empty."]}
+
+    contrib_400 = schema["paths"]["/api/tasks/{task_id}/contributions/"]["post"]["responses"][
+        "400"
+    ]["content"]["application/json"]
+    assert contrib_400["schema"] == {"$ref": "#/components/schemas/FieldErrors"}
+    assert "FieldErrorsExample" in contrib_400["examples"]
+
+    reviews_409 = schema["paths"]["/api/reviews/"]["post"]["responses"]["409"]["content"][
+        "application/json"
+    ]
+    assert reviews_409["schema"] == {"$ref": "#/components/schemas/DetailError"}
+    assert "DetailErrorExample" in reviews_409["examples"]
+
+
+@pytest.mark.django_db
+def test_real_error_responses_match_documented_shapes(api_client, make_user):
+    anon_resp = api_client.get("/api/tasks/")
+    assert anon_resp.status_code == 403
+    anon_body = anon_resp.json()
+    assert set(anon_body) == {"detail"}
+    assert isinstance(anon_body["detail"], str) and anon_body["detail"]
+
+    author = make_user(username="author_err", role=User.Role.PARTICIPANT)
+    reviewer = make_user(username="reviewer_err", role=User.Role.REVIEWER)
+    sentence = SourceSentence.objects.create(text_ru="Пример", domain=Domain.IT, is_original=True)
+    task = Task.objects.create(
+        type=Task.Type.TRANSLATION, domain=Domain.IT, source_sentence=sentence
+    )
+
+    api_client.force_authenticate(author)
+    bad_submit = api_client.post(f"/api/tasks/{task.pk}/contributions/", {"text_kk": "   "})
+    assert bad_submit.status_code == 400
+    bad_body = bad_submit.json()
+    assert isinstance(bad_body, dict) and bad_body
+    assert all(
+        isinstance(key, str)
+        and isinstance(values, list)
+        and values
+        and all(isinstance(item, str) for item in values)
+        for key, values in bad_body.items()
+    )
+
+    contribution = Contribution.objects.create(task=task, author=author)
+    version = ContributionVersion.objects.create(
+        contribution=contribution, number=1, text_kk="Қазақша аударма"
+    )
+    api_client.force_authenticate(reviewer)
+    first_vote = api_client.post(
+        "/api/reviews/", {"version_id": version.pk, "decision": "accept"}
+    )
+    assert first_vote.status_code == 201
+    dup_vote = api_client.post("/api/reviews/", {"version_id": version.pk, "decision": "accept"})
+    assert dup_vote.status_code == 409
+    dup_body = dup_vote.json()
+    assert set(dup_body) == {"detail"}
+    assert isinstance(dup_body["detail"], str) and dup_body["detail"]
