@@ -1,11 +1,10 @@
 from random import Random
 
-from django.conf import settings
 from django.db.models import Prefetch
 
 from apps.contributions.domain import shuffle_variants
+from apps.contributions.errors import ContributionError
 from apps.contributions.models import Contribution, ContributionVersion, Task
-from apps.contributions.services.errors import ContributionError
 from common.choices import Domain
 
 
@@ -20,7 +19,7 @@ def active_tasks(*, domain: str | None = None, task_type: str | None = None):
         if task_type not in Task.Type.values:
             raise ContributionError("Invalid task type filter.", field="type")
         queryset = queryset.filter(type=task_type)
-    return queryset.order_by("pk")[: settings.TASK_LIST_PAGE_SIZE]
+    return queryset.order_by("pk")
 
 
 def visible_variants(

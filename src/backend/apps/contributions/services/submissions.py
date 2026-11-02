@@ -4,9 +4,12 @@ from django.conf import settings
 from django.db import transaction
 
 from apps.contributions.domain import check_text
+from apps.contributions.errors import (
+    ContributionConflict,
+    ContributionError,
+    ContributionForbidden,
+)
 from apps.contributions.models import Contribution, ContributionVersion, Task, VariantPreference
-
-from .errors import ContributionConflict, ContributionError, ContributionForbidden
 
 
 @dataclass(frozen=True)

@@ -1,6 +1,8 @@
 from random import Random
 
+from django.conf import settings
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -14,12 +16,21 @@ from apps.contributions.api.serializers import (
     TextInputSerializer,
     VersionSubmissionSerializer,
 )
+from apps.contributions.errors import ContributionError
 from apps.contributions.selectors import active_tasks, own_contributions, task_detail
 from apps.contributions.services import set_preference, submit_contribution, submit_version
-from apps.contributions.services.errors import ContributionError
+
+
+class TaskListPagination(PageNumberPagination):
+    page_size = settings.TASK_LIST_PAGE_SIZE
+
+    def get_page_size(self, request):
+        return settings.TASK_LIST_PAGE_SIZE
 
 
 class TaskListView(APIView):
+    pagination_class = TaskListPagination
+
     def get(self, request):
         domain = request.query_params.get("domain")
         task_type = request.query_params.get("type")
@@ -27,7 +38,9 @@ class TaskListView(APIView):
             tasks = active_tasks(domain=domain, task_type=task_type)
         except ContributionError as exc:
             return Response(exc.as_dict(), status=exc.status_code)
-        return Response({"results": TaskSerializer(tasks, many=True).data})
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(tasks, request, view=self)
+        return paginator.get_paginated_response(TaskSerializer(page, many=True).data)
 
 
 class TaskDetailView(APIView):

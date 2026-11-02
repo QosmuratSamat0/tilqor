@@ -65,7 +65,12 @@ def test_task_list_empty_state_and_invalid_filters(api_client, user_factory):
 
     empty_resp = api_client.get(TASKS_URL, {"domain": Domain.ENGINEERING})
     assert empty_resp.status_code == 200
-    assert empty_resp.data == {"results": []}
+    assert empty_resp.data == {
+        "count": 0,
+        "next": None,
+        "previous": None,
+        "results": [],
+    }
 
     bad_domain = api_client.get(TASKS_URL, {"domain": "invalid"})
     assert bad_domain.status_code == 400
@@ -74,6 +79,45 @@ def test_task_list_empty_state_and_invalid_filters(api_client, user_factory):
     bad_type = api_client.get(TASKS_URL, {"type": "invalid"})
     assert bad_type.status_code == 400
     assert "type" in bad_type.data
+
+
+def test_task_list_pagination_and_out_of_range_pages(
+    api_client, user_factory, make_translation_task, make_term_task
+):
+    it_tasks = [make_translation_task(domain=Domain.IT) for _ in range(22)]
+    med_tasks = [make_term_task(domain=Domain.MEDICINE) for _ in range(3)]
+    make_translation_task(domain=Domain.IT, is_active=False)
+
+    api_client.force_authenticate(user_factory())
+
+    page1 = api_client.get(TASKS_URL)
+    assert page1.status_code == 200
+    assert page1.data["count"] == 25
+    assert len(page1.data["results"]) == 20
+    assert page1.data["previous"] is None
+    assert "page=2" in page1.data["next"]
+    assert [row["id"] for row in page1.data["results"]] == [t.pk for t in it_tasks[:20]]
+
+    page2 = api_client.get(TASKS_URL, {"page": 2})
+    assert page2.status_code == 200
+    assert page2.data["count"] == 25
+    assert len(page2.data["results"]) == 5
+    assert page2.data["next"] is None
+    assert page2.data["previous"] is not None
+    assert [row["id"] for row in page2.data["results"]] == [
+        *(t.pk for t in it_tasks[20:]),
+        *(t.pk for t in med_tasks),
+    ]
+
+    filtered_p1 = api_client.get(TASKS_URL, {"domain": Domain.IT, "page": 1})
+    filtered_p2 = api_client.get(TASKS_URL, {"domain": Domain.IT, "page": 2})
+    assert filtered_p1.data["count"] == 22
+    assert len(filtered_p1.data["results"]) == 20
+    assert len(filtered_p2.data["results"]) == 2
+    assert "domain=it" in filtered_p1.data["next"]
+
+    for bad_page in (0, 3, "abc"):
+        assert api_client.get(TASKS_URL, {"page": bad_page}).status_code == 404
 
 
 def test_inactive_task_is_hidden_and_refuses_submission_and_preference(
