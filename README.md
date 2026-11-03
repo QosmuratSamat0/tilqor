@@ -85,6 +85,7 @@ Comparison of alternatives: [technology comparison](docs/tech-comparison.md).
 | [Risks and milestones](docs/risks.md) | Risks, milestones, dependencies, responsibilities |
 | [Survey results](docs/survey/results.md) | 14 responses, verified findings and assumptions |
 | [Survey template](docs/survey/template.md) | Original questionnaire (TIL-2) |
+| [Architecture decisions](docs/adr/README.md) | Why the main technical decisions were taken (ADR) |
 
 Diagrams (PlantUML sources in [`diagrams/src`](diagrams/src), images in [`diagrams/png`](diagrams/png)):
 [system context](diagrams/png/context.png) · [use cases](diagrams/png/use-case.png) · [components](diagrams/png/components.png)
@@ -151,6 +152,16 @@ pytest -v
 ```
 
 The same lint and tests run automatically on every pull request in GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
+**Short commands (optional).** With GNU make installed (Windows: `winget install ezwinports.make`), the steps above are shortened in the [`Makefile`](Makefile). Run `make` to see the list.
+
+| Command | Does |
+|---|---|
+| `make setup` | create `.venv` and install dependencies |
+| `make db` | start only PostgreSQL |
+| `make check` | ruff + migration check + pytest, as in CI |
+| `make run` | local Django server on http://localhost:8001 |
+| `make up` / `make down` | start / stop everything in Docker |
 
 To regenerate the diagram images (requires Docker):
 
