@@ -20,6 +20,9 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.PARTICIPANT)
     # Public identifier for attribution; email is never shown publicly (NFR-04).
     display_name = models.CharField(max_length=60, blank=True)
+    # Contributor permission for the publication terms (FR-06).
+    accepted_terms_at = models.DateTimeField(null=True, blank=True)
+    accepted_terms_version = models.CharField(max_length=20, blank=True)
 
     objects = TilqorUserManager()
 
@@ -43,3 +46,7 @@ class User(AbstractUser):
     @property
     def public_name(self):
         return self.display_name or self.username
+
+    @property
+    def accepted_terms(self) -> bool:
+        return bool(self.accepted_terms_at and self.accepted_terms_version)

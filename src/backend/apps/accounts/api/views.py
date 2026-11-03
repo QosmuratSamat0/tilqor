@@ -12,7 +12,7 @@ from apps.accounts.api.serializers import (
     LoginSerializer,
     RegisterSerializer,
 )
-from apps.accounts.services import register_user
+from apps.accounts.services import accept_publication_terms, register_user
 from common.serializers import (
     AnyErrorSerializer,
     DetailErrorSerializer,
@@ -89,3 +89,16 @@ class CurrentUserView(APIView):
     )
     def get(self, request):
         return Response(CurrentUserSerializer(request.user).data)
+
+
+class AcceptTermsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["auth"],
+        request=None,
+        responses={200: CurrentUserSerializer, 403: DetailErrorSerializer},
+    )
+    def post(self, request):
+        user = accept_publication_terms(user=request.user)
+        return Response(CurrentUserSerializer(user).data)

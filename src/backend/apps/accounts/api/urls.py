@@ -1,6 +1,13 @@
 from django.urls import path
 
-from apps.accounts.api.views import CsrfView, CurrentUserView, LoginView, LogoutView, RegisterView
+from apps.accounts.api.views import (
+    AcceptTermsView,
+    CsrfView,
+    CurrentUserView,
+    LoginView,
+    LogoutView,
+    RegisterView,
+)
 
 urlpatterns = [
     path("csrf/", CsrfView.as_view(), name="auth-csrf"),
@@ -8,4 +15,5 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="auth-login"),
     path("logout/", LogoutView.as_view(), name="auth-logout"),
     path("me/", CurrentUserView.as_view(), name="auth-me"),
+    path("accept-terms/", AcceptTermsView.as_view(), name="auth-accept-terms"),
 ]
