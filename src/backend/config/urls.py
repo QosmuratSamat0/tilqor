@@ -21,4 +21,5 @@ urlpatterns = [
     path("api/reviews/", include("apps.verification.api.urls")),
     path("api/dictionary/", include((dictionary_urlpatterns, "dictionary"))),
     path("api/catalogue/", include((catalogue_urlpatterns, "catalogue"))),
+    path("api/exports/", include("apps.exports.api.urls")),
 ]
