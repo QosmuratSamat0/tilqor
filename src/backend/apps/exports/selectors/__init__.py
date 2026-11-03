@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, F, Q
 from django.utils import timezone
 
@@ -56,7 +57,7 @@ def export_records() -> list[dict]:
 
         try:
             accepted_dt = version.finalization.created_at
-        except Exception:
+        except ObjectDoesNotExist:
             accepted_dt = version.created_at
 
         rows.append(
