@@ -19,12 +19,7 @@ def eligible_versions():
         Q(contribution__task__term__source="")
         | ~Q(contribution__task__term__licence="")
     )
-    is_seed_variant = (
-        ~Q(source="")
-        | Q(contribution__author__username="seed")
-        | Q(contribution__author__username__startswith="seed_")
-    )
-    term_variant_eligible = ~is_seed_variant | ~Q(licence="")
+    term_variant_eligible = Q(source="") | ~Q(licence="")
     term_eligible = (
         Q(contribution__task__type=Task.Type.TERM)
         & term_source_eligible

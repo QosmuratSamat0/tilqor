@@ -12,18 +12,11 @@ from apps.glossary.models import ConnectorHint, Term
 from common.choices import Domain
 
 
-def _variant_public_name(version: ContributionVersion) -> str:
-    username = version.contribution.author.username
-    if version.source or username == "seed" or username.startswith("seed_"):
-        return version.source or version.contribution.task.term.source
-    return version.contribution.author.public_name
-
-
 def _serialize_variant(version: ContributionVersion) -> dict:
     return {
         "id": version.pk,
         "text_kk": version.text_kk,
-        "public_name": _variant_public_name(version),
+        "public_name": version.source or version.contribution.author.public_name,
     }
 
 
@@ -152,7 +145,7 @@ def daily_catalogue(*, raw_date: str | None = None) -> dict:
         )
         by_id = {v.pk: v for v in chosen_variants}
         chosen_v = by_id.get(chosen_term.recommended_version_id) or chosen_variants[0]
-        public_name = _variant_public_name(chosen_v)
+        public_name = chosen_v.source or chosen_v.contribution.author.public_name
         word_of_the_day = {
             "id": chosen_term.pk,
             "term_id": chosen_term.pk,
@@ -178,7 +171,7 @@ def daily_catalogue(*, raw_date: str | None = None) -> dict:
             "text_ru": v.contribution.task.term.text_ru,
             "domain": v.contribution.task.term.domain,
             "text_kk": v.text_kk,
-            "public_name": _variant_public_name(v),
+            "public_name": v.source or v.contribution.author.public_name,
             "preference_count": v.preference_count,
         }
         for v in top_versions

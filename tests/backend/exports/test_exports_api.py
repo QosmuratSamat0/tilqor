@@ -7,6 +7,7 @@ import unicodedata
 
 import pytest
 from django.conf import settings
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import User
@@ -15,6 +16,7 @@ from apps.exports.domain import EXPORT_COLUMNS
 from apps.glossary.models import Term
 from apps.verification.models import Finalization, QualitySettings
 from common.choices import Domain
+from tests.backend.conftest import PASSWORD
 
 pytestmark = pytest.mark.django_db
 
@@ -47,7 +49,7 @@ def _accept_version(version: ContributionVersion) -> Finalization:
 
 def test_exports_csv_json_and_manifest_match_ids_provenance_and_exclude_ineligible(api_client):
     author_ok = _create_user("export_author_ok", display_name="Айгерім С.", accepted_terms=True)
-    seed_user = _create_user("seed", display_name="seed", accepted_terms=True)
+    seed_user = _create_user("seed", display_name="Tilqor team", accepted_terms=True)
     author_no_terms = _create_user(
         "export_author_noterms", display_name="Terms Not Accepted", accepted_terms=False
     )
@@ -286,9 +288,11 @@ def test_exports_csv_json_and_manifest_match_ids_provenance_and_exclude_ineligib
         assert seed_user.email not in payload_str
 
 
-def test_export_excludes_sourced_term_without_licence_and_seed_variant_without_licence(api_client):
+def test_export_excludes_sourced_term_without_licence_and_third_party_variant_without_licence(
+    api_client,
+):
     participant = _create_user("part_user", display_name="Марат К.", accepted_terms=True)
-    seed_user = _create_user("seed", display_name="seed", accepted_terms=True)
+    seed_user = _create_user("seed", display_name="Tilqor team", accepted_terms=True)
 
     unlicensed_term = Term.objects.create(
         text_ru="Закрытый термин",
@@ -327,7 +331,7 @@ def test_export_excludes_sourced_term_without_licence_and_seed_variant_without_l
     v2 = ContributionVersion.objects.create(
         contribution=c2,
         number=1,
-        text_kk="лицензиясыз seed нұсқа",
+        text_kk="лицензиясыз сыртқы нұсқа",
         status=ContributionVersion.Status.ACCEPTED,
         source="Termincom.kz",
         licence="",
@@ -336,3 +340,44 @@ def test_export_excludes_sourced_term_without_licence_and_seed_variant_without_l
 
     assert api_client.get(JSON_URL).json()["records"] == []
     assert api_client.get(MANIFEST_URL).json()["record_count"] == 0
+
+
+def test_seedling_participant_variant_is_exported_with_own_public_name_and_cc_by(api_client):
+    reg_resp = api_client.post(
+        reverse("auth-register"),
+        {
+            "username": "seedling",
+            "email": "seedling@example.com",
+            "password": PASSWORD,
+            "display_name": "Ерлан Б.",
+            "accept_terms": True,
+        },
+        format="json",
+    )
+    assert reg_resp.status_code == 201
+    seedling = User.objects.get(username="seedling")
+
+    term = Term.objects.create(
+        text_ru="Компилятор",
+        definition="Программа перевода исходного кода.",
+        domain=Domain.IT,
+        source="Termincom.kz",
+        licence="CC BY-SA 4.0",
+    )
+    task = Task.objects.create(type=Task.Type.TERM, domain=Domain.IT, term=term)
+    contrib = Contribution.objects.create(task=task, author=seedling)
+    version = ContributionVersion.objects.create(
+        contribution=contrib,
+        number=1,
+        text_kk="құрастырғыш",
+        status=ContributionVersion.Status.ACCEPTED,
+    )
+    _accept_version(version)
+
+    records = api_client.get(JSON_URL).json()["records"]
+    assert len(records) == 1
+    assert records[0]["id"] == version.pk
+    assert records[0]["contributor"] == "Ерлан Б."
+    assert records[0]["licence"] == settings.DATASET_LICENCE
+    assert records[0]["attribution"] == "Termincom.kz"
+    assert records[0]["is_original"] is False

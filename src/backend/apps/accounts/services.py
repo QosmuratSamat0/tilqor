@@ -7,6 +7,12 @@ from django.utils import timezone
 from apps.accounts.models import User
 
 
+def is_reserved_username(username: str) -> bool:
+    """Return True for reserved system seed usernames (`seed` and `seed_*`)."""
+    lowered = username.strip().lower()
+    return lowered == "seed" or lowered.startswith("seed_")
+
+
 @transaction.atomic
 def register_user(
     *,
@@ -17,6 +23,8 @@ def register_user(
     display_name: str = "",
 ) -> User:
     """Create a participant account with recorded publication-terms acceptance (FR-01, FR-06)."""
+    if is_reserved_username(username):
+        raise ValidationError({"username": ["This username is reserved."]})
     if not accept_terms:
         raise ValidationError(
             {"accept_terms": ["You must accept the publication terms to register."]}

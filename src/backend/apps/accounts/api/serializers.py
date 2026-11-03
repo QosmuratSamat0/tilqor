@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from apps.accounts.models import User
+from apps.accounts.services import is_reserved_username
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -13,6 +14,8 @@ class RegisterSerializer(serializers.Serializer):
     accept_terms = serializers.BooleanField()
 
     def validate_username(self, value):
+        if is_reserved_username(value):
+            raise serializers.ValidationError("This username is reserved.")
         if User.objects.filter(username__iexact=value).exists():
             raise serializers.ValidationError("This username is already taken.")
         return value

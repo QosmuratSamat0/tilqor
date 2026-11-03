@@ -13,6 +13,8 @@ from apps.glossary.domain.seed import (
 )
 from apps.glossary.models import ConnectorHint, Term
 
+SEED_DISPLAY_NAME = "Tilqor team"
+
 
 def _get_seed_user(index: int = 0) -> User:
     username = "seed" if index == 0 else f"seed_{index + 1}"
@@ -20,13 +22,16 @@ def _get_seed_user(index: int = 0) -> User:
         username=username,
         defaults={
             "email": f"{username}@tilqor.internal",
-            "display_name": "seed",
+            "display_name": SEED_DISPLAY_NAME,
             "role": User.Role.PARTICIPANT,
             "accepted_terms_at": timezone.now(),
             "accepted_terms_version": settings.PUBLICATION_TERMS_VERSION,
         },
     )
     updated_fields: list[str] = []
+    if user.display_name != SEED_DISPLAY_NAME:
+        user.display_name = SEED_DISPLAY_NAME
+        updated_fields.append("display_name")
     if created or user.has_usable_password():
         user.set_unusable_password()
         updated_fields.append("password")

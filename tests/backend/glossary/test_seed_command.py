@@ -3,26 +3,31 @@
 import shutil
 
 import pytest
+from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from apps.accounts.models import User
 from apps.contributions.models import Contribution, ContributionVersion, SourceSentence, Task
 from apps.glossary.models import ConnectorHint, Term
+from apps.verification.models import Finalization, QualitySettings
 
 pytestmark = pytest.mark.django_db
 
 
 def test_load_seed_creates_terms_tasks_submitted_variants_sentences_and_unpublished_connectors(
-    seed_fixtures_dir,
+    api_client, seed_fixtures_dir
 ):
+    User.objects.create(username="seed", email="seed@tilqor.internal", display_name="seed")
+
     call_command("load_seed", "--dir", str(seed_fixtures_dir))
 
     seed_user = User.objects.get(username="seed")
     assert seed_user.role == User.Role.PARTICIPANT
     assert not seed_user.has_usable_password()
     assert seed_user.accepted_terms is True
-    assert seed_user.public_name == "seed"
+    assert seed_user.display_name == "Tilqor team"
+    assert seed_user.public_name == "Tilqor team"
 
     assert Term.objects.count() == 3
     assert Task.objects.filter(type=Task.Type.TERM, is_active=True).count() == 3
@@ -67,6 +72,33 @@ def test_load_seed_creates_terms_tasks_submitted_variants_sentences_and_unpublis
         ContributionVersion.objects.count(),
     )
     assert counts_after == counts_before
+
+    inhibitor_v = ContributionVersion.objects.get(contribution__task__term=inhibitor_term)
+    inhibitor_v.status = ContributionVersion.Status.ACCEPTED
+    inhibitor_v.save(update_fields=["status"])
+    Finalization.objects.create(
+        version=inhibitor_v,
+        decision="accept",
+        quality_settings=QualitySettings.objects.get(is_active=True),
+    )
+
+    dict_resp = api_client.get(f"/api/dictionary/{inhibitor_term.pk}/")
+    assert dict_resp.status_code == 200
+    assert dict_resp.json()["alternatives"] == [
+        {
+            "id": inhibitor_v.pk,
+            "text_kk": "тежегіш",
+            "public_name": "Tilqor team",
+        }
+    ]
+
+    export_records = api_client.get("/api/exports/dataset.json").json()["records"]
+    assert len(export_records) == 1
+    assert export_records[0]["id"] == inhibitor_v.pk
+    assert export_records[0]["contributor"] == "Tilqor team"
+    assert export_records[0]["licence"] == settings.DATASET_LICENCE
+    assert export_records[0]["attribution"] == ""
+    assert export_records[0]["is_original"] is True
 
 
 def test_load_seed_stops_with_file_and_line_number_and_rolls_back_on_broken_row(

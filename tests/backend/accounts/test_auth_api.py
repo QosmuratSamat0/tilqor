@@ -68,6 +68,23 @@ def test_register_requires_accept_terms_true(api_client):
         )
 
 
+def test_register_refuses_reserved_seed_usernames_and_allows_seedling(api_client):
+    for reserved in ("seed", "SEED", "seed_2", "seed_fan", "SEED_fan"):
+        resp = register(api_client, username=reserved, email=f"{reserved}@example.com")
+        assert resp.status_code == 400
+        assert "username" in resp.json()
+        assert not User.objects.filter(username__iexact=reserved).exists()
+
+    ok_resp = register(
+        api_client,
+        username="seedling",
+        email="seedling@example.com",
+        display_name="Seedling User",
+    )
+    assert ok_resp.status_code == 201
+    assert ok_resp.json()["username"] == "seedling"
+
+
 def test_accept_terms_endpoint_updates_existing_account_idempotently(api_client, make_user):
     user = make_user(username="legacy_user", accepted_terms=False)
     assert user.accepted_terms is False
