@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -7,16 +8,25 @@ from apps.accounts.models import User
 
 
 @transaction.atomic
-def register_user(*, username, email, password, display_name="", accept_terms=True):
+def register_user(
+    *,
+    username: str,
+    email: str,
+    password: str,
+    accept_terms: bool,
+    display_name: str = "",
+) -> User:
     """Create a participant account with recorded publication-terms acceptance (FR-01, FR-06)."""
-    now = timezone.now() if accept_terms else None
-    version = settings.PUBLICATION_TERMS_VERSION if accept_terms else ""
+    if not accept_terms:
+        raise ValidationError(
+            {"accept_terms": ["You must accept the publication terms to register."]}
+        )
     user = User(
         username=username,
         email=email,
         display_name=display_name,
-        accepted_terms_at=now,
-        accepted_terms_version=version,
+        accepted_terms_at=timezone.now(),
+        accepted_terms_version=settings.PUBLICATION_TERMS_VERSION,
     )
     validate_password(password, user=user)
     user.set_password(password)

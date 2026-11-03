@@ -1,9 +1,11 @@
 """FR-01, FR-06: registration, sign-in, sign-out and publication terms acceptance."""
 import pytest
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 
 from apps.accounts.models import User
+from apps.accounts.services import register_user
 from tests.backend.conftest import PASSWORD
 
 pytestmark = pytest.mark.django_db
@@ -53,6 +55,17 @@ def test_register_requires_accept_terms_true(api_client):
     assert false_resp.status_code == 400
     assert "accept_terms" in false_resp.json()
     assert not User.objects.filter(username="aru").exists()
+
+    with pytest.raises(TypeError):
+        register_user(username="aru", email="aru@example.com", password=PASSWORD)
+
+    with pytest.raises(ValidationError):
+        register_user(
+            username="aru",
+            email="aru@example.com",
+            password=PASSWORD,
+            accept_terms=False,
+        )
 
 
 def test_accept_terms_endpoint_updates_existing_account_idempotently(api_client, make_user):
