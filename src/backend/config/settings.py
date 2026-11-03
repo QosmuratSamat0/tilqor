@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "apps.contributions",
     "apps.glossary",
     "apps.verification",
+    "apps.exports",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -164,3 +165,7 @@ CONTRIBUTION_MAX_LENGTH_TRANSLATION = 1000
 CONTRIBUTION_MAX_LENGTH_TERM = 200
 RUSSIAN_CONNECTORS = ["и", "но", "что", "потому что", "который", "или", "если"]
 TASK_LIST_PAGE_SIZE = 20
+
+# Publication terms and dataset licence (FR-06, FR-20, NFR-12).
+PUBLICATION_TERMS_VERSION = "2026-11"
+DATASET_LICENCE = "CC BY 4.0"

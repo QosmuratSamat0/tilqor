@@ -20,6 +20,14 @@ class SubmissionResult:
     warnings: dict[str, list[str]]
 
 
+def _require_accepted_terms(user) -> None:
+    if not getattr(user, "accepted_terms", False):
+        raise ContributionForbidden(
+            "You must accept the publication terms before submitting content.",
+            field="accept_terms",
+        )
+
+
 def _locked_task(task_id: int) -> Task:
     try:
         return Task.objects.select_for_update().get(pk=task_id)
@@ -54,6 +62,7 @@ def _validate_task_text(task: Task, text_kk: str) -> tuple[str, dict[str, list[s
 @transaction.atomic
 def submit_contribution(*, author, task_id: int, text_kk: str) -> SubmissionResult:
     """Create a user's initial contribution and version 1 for an active task (FR-04, FR-05)."""
+    _require_accepted_terms(author)
     task = _locked_task(task_id)
     if not task.is_active:
         raise ContributionConflict("Task is not active.", field="task")
@@ -85,6 +94,7 @@ def submit_version(*, author, contribution_id: int, text_kk: str) -> SubmissionR
         raise ContributionError("Unknown contribution.", field="contribution") from exc
     if contribution.author_id != author.pk:
         raise ContributionForbidden("Only the author may submit a new version.", field="author")
+    _require_accepted_terms(author)
     if not contribution.task.is_active:
         raise ContributionConflict("Task is not active.", field="task")
     latest = contribution.versions.select_for_update().order_by("-number").first()

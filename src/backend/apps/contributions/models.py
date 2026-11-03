@@ -98,6 +98,8 @@ class ContributionVersion(models.Model):
     number = models.PositiveIntegerField()
     text_kk = models.TextField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUBMITTED)
+    source = models.CharField(max_length=255, blank=True)
+    licence = models.CharField(max_length=100, blank=True)
     # Escalation flag on in_review versions; not a separate status (requirements, section 4).
     escalated = models.BooleanField(default=False)
     # Publication eligibility; withdrawal keeps the decision and history (FR-21).

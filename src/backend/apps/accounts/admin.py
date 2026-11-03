@@ -9,4 +9,16 @@ class TilqorUserAdmin(UserAdmin):
     list_display = ("username", "email", "display_name", "role", "is_active", "date_joined")
     list_filter = ("role", "is_active", "is_staff")
     search_fields = ("username", "email", "display_name")
-    fieldsets = UserAdmin.fieldsets + (("Tilqor", {"fields": ("role", "display_name")}),)
+    fieldsets = UserAdmin.fieldsets + (
+        (
+            "Tilqor",
+            {
+                "fields": (
+                    "role",
+                    "display_name",
+                    "accepted_terms_at",
+                    "accepted_terms_version",
+                )
+            },
+        ),
+    )

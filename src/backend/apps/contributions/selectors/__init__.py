@@ -1,12 +1,40 @@
 from random import Random
 
-from django.db.models import Exists, OuterRef, Prefetch
+from django.db.models import Exists, OuterRef, Prefetch, Q
 
 from apps.contributions.domain import shuffle_variants
 from apps.contributions.errors import ContributionError
 from apps.contributions.models import Contribution, ContributionVersion, Task
 from apps.verification.models import Review
 from common.choices import Domain
+
+
+def eligible_versions():
+    """Return accepted, non-withdrawn, non-control versions with valid terms and source licence."""
+    translation_eligible = Q(contribution__task__type=Task.Type.TRANSLATION) & (
+        Q(contribution__task__source_sentence__is_original=True)
+        | ~Q(contribution__task__source_sentence__licence="")
+    )
+    term_source_eligible = (
+        Q(contribution__task__term__source="")
+        | ~Q(contribution__task__term__licence="")
+    )
+    term_variant_eligible = Q(source="") | ~Q(licence="")
+    term_eligible = (
+        Q(contribution__task__type=Task.Type.TERM)
+        & term_source_eligible
+        & term_variant_eligible
+    )
+    return (
+        ContributionVersion.objects.filter(
+            status=ContributionVersion.Status.ACCEPTED,
+            is_withdrawn=False,
+            is_control=False,
+            contribution__author__accepted_terms_at__isnull=False,
+        )
+        .exclude(contribution__author__accepted_terms_version="")
+        .filter(translation_eligible | term_eligible)
+    )
 
 
 def active_tasks(*, domain: str | None = None, task_type: str | None = None):

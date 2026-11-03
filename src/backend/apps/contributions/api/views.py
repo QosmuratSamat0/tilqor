@@ -112,7 +112,7 @@ class TaskContributionView(APIView):
         responses={
             201: ContributionSubmissionSerializer,
             400: FieldErrorsSerializer,
-            403: DetailErrorSerializer,
+            403: AnyErrorSerializer,
             409: FieldErrorsSerializer,
         },
     )

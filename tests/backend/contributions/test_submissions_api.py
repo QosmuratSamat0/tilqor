@@ -1,4 +1,4 @@
-"""FR-07, FR-08, FR-13, NFR-01: automatic checks, Unicode fidelity, own submissions and versions."""
+"""FR-06, FR-07, FR-08, FR-13, NFR-01: terms gate, checks, Unicode, own submissions and versions."""
 
 import unicodedata
 
@@ -28,6 +28,37 @@ def test_anonymous_requests_are_refused(api_client, method, url, payload):
     caller = getattr(api_client, method)
     response = caller(url, payload) if payload is not None else caller(url)
     assert response.status_code == 403
+
+
+def test_submitting_contribution_or_version_without_accepted_terms_is_forbidden(
+    api_client, user_factory, make_translation_task, add_version
+):
+    task = make_translation_task()
+    unaccepted_user = user_factory(accepted_terms=False)
+    api_client.force_authenticate(unaccepted_user)
+
+    contrib_resp = api_client.post(
+        f"{TASKS_URL}{task.pk}/contributions/",
+        {"text_kk": "Қазақша аударма"},
+    )
+    assert contrib_resp.status_code == 403
+    assert "accept_terms" in contrib_resp.data
+    assert not Contribution.objects.filter(task=task, author=unaccepted_user).exists()
+
+    other_task = make_translation_task()
+    v1 = add_version(
+        other_task,
+        text_kk="Алғашқы нұсқа",
+        author=unaccepted_user,
+        status=ContributionVersion.Status.NEEDS_EDIT,
+    )
+    version_resp = api_client.post(
+        f"{CONTRIBUTIONS_URL}{v1.contribution_id}/versions/",
+        {"text_kk": "Жаңартылған нұсқа"},
+    )
+    assert version_resp.status_code == 403
+    assert "accept_terms" in version_resp.data
+    assert v1.contribution.versions.count() == 1
 
 
 def test_automatic_checks_reject_empty_too_long_and_duplicate_without_saving(

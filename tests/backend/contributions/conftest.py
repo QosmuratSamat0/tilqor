@@ -1,6 +1,8 @@
 from itertools import count
 
 import pytest
+from django.conf import settings
+from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.contributions.models import Contribution, ContributionVersion, SourceSentence, Task
@@ -12,10 +14,13 @@ from common.choices import Domain
 def user_factory(db):
     sequence = count()
 
-    def create(role=User.Role.PARTICIPANT, **kwargs):
+    def create(role=User.Role.PARTICIPANT, accepted_terms=True, **kwargs):
         number = next(sequence)
         username = kwargs.pop("username", f"user{number}")
         email = kwargs.pop("email", f"{username}@example.com")
+        if accepted_terms:
+            kwargs.setdefault("accepted_terms_at", timezone.now())
+            kwargs.setdefault("accepted_terms_version", settings.PUBLICATION_TERMS_VERSION)
         return User.objects.create_user(
             username=username,
             email=email,
@@ -82,4 +87,3 @@ def add_version(user_factory):
         )
 
     return create
-
