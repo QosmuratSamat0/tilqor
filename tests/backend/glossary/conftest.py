@@ -58,14 +58,20 @@ def make_term_with_task(db):
         definition="Определение термина",
         domain=Domain.IT,
         source="Termincom.kz",
+        licence=None,
+        source_url="",
         is_active=True,
     ):
         number = next(sequence)
+        if licence is None:
+            licence = "CC BY 4.0" if source else ""
         term = Term.objects.create(
             text_ru=text_ru or f"Термин {number}",
             definition=definition,
             domain=domain,
             source=source,
+            licence=licence,
+            source_url=source_url,
         )
         task = Task.objects.create(
             type=Task.Type.TERM,
@@ -121,6 +127,8 @@ def make_version_on_task(user_factory):
         status=ContributionVersion.Status.ACCEPTED,
         is_control=False,
         is_withdrawn=False,
+        source="",
+        licence="",
         with_finalization=True,
     ):
         author = author or user_factory()
@@ -131,6 +139,8 @@ def make_version_on_task(user_factory):
             number=number,
             text_kk=text_kk,
             status=status,
+            source=source,
+            licence=licence,
             is_control=is_control,
             is_withdrawn=is_withdrawn,
             reference_decision=reference_decision,
@@ -185,4 +195,3 @@ def make_connector_hint(db):
         )
 
     return create
-

@@ -25,6 +25,8 @@ class TermSeedRow:
     domain: str
     variants_kk: tuple[str, ...]
     source: str
+    licence: str
+    source_url: str = ""
 
 
 @dataclass(frozen=True)
@@ -71,17 +73,32 @@ def _open_csv_rows(directory: Path, filename: str, required_columns: set[str]):
 
 def parse_terms_csv(directory: Path, *, max_variant_length: int = 200) -> list[TermSeedRow]:
     filename = "terms.csv"
-    required = {"text_ru", "definition", "domain", "variants_kk", "source"}
+    required = {"text_ru", "definition", "domain", "variants_kk", "source", "licence"}
     rows: list[TermSeedRow] = []
     for line_no, row in _open_csv_rows(directory, filename, required):
         text_ru = row["text_ru"]
         domain = row["domain"]
+        source = row["source"]
+        licence = row["licence"]
+        source_url = row.get("source_url", "")
         if not text_ru:
             raise SeedFormatError(filename, line_no, "text_ru cannot be empty.")
         if len(text_ru) > 200:
             raise SeedFormatError(filename, line_no, "text_ru exceeds 200 characters.")
         if domain not in VALID_DOMAINS:
             raise SeedFormatError(filename, line_no, f"Invalid domain '{domain}'.")
+        if not source and licence:
+            raise SeedFormatError(
+                filename,
+                line_no,
+                "Team-written term without source must have an empty licence.",
+            )
+        if source and not licence:
+            raise SeedFormatError(
+                filename,
+                line_no,
+                "Term with an external source must specify a licence.",
+            )
 
         raw_variants = [
             normalize_text(item)
@@ -105,7 +122,9 @@ def parse_terms_csv(directory: Path, *, max_variant_length: int = 200) -> list[T
                 definition=row["definition"],
                 domain=domain,
                 variants_kk=tuple(deduped_variants),
-                source=row["source"],
+                source=source,
+                licence=licence,
+                source_url=source_url,
             )
         )
     return rows

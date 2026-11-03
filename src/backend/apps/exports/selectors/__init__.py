@@ -7,6 +7,11 @@ from apps.contributions.selectors import eligible_versions
 from apps.exports.domain import build_export_row, build_manifest
 
 
+def _is_seed_version(version) -> bool:
+    username = version.contribution.author.username
+    return bool(version.source) or username == "seed" or username.startswith("seed_")
+
+
 def export_records() -> list[dict]:
     """Return ordered dataset export rows for all eligible versions (FR-20, NFR-12)."""
     queryset = (
@@ -36,13 +41,18 @@ def export_records() -> list[dict]:
             licence = sentence.licence or settings.DATASET_LICENCE
             attribution = sentence.attribution
             is_original = sentence.is_original
+            contributor = version.contribution.author.public_name
         else:
             term = task.term
             text_ru = term.text_ru
-            source_url = ""
-            licence = settings.DATASET_LICENCE
-            attribution = term.source
-            is_original = not bool(term.source)
+            source_url = term.source_url
+            licence = version.licence or settings.DATASET_LICENCE
+            attribution = version.source or term.source
+            is_original = not bool(term.source or version.source)
+            if _is_seed_version(version):
+                contributor = version.source or term.source
+            else:
+                contributor = version.contribution.author.public_name
 
         try:
             accepted_dt = version.finalization.created_at
@@ -62,7 +72,7 @@ def export_records() -> list[dict]:
                 attribution=attribution,
                 is_original=is_original,
                 modifications=version.earlier_versions,
-                contributor=version.contribution.author.public_name,
+                contributor=contributor,
                 accepted_at=accepted_dt.isoformat(),
             )
         )

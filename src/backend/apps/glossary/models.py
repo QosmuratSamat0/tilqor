@@ -11,6 +11,8 @@ class Term(models.Model):
     definition = models.TextField(blank=True)
     domain = models.CharField(max_length=20, choices=Domain.choices)
     source = models.CharField(max_length=255, blank=True)
+    source_url = models.URLField(blank=True)
+    licence = models.CharField(max_length=100, blank=True)
     # Chosen by a moderator among accepted variants (FR-18).
     recommended_version = models.ForeignKey(
         "contributions.ContributionVersion",

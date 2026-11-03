@@ -38,6 +38,21 @@ def test_catalogue_today_empty_state_and_invalid_date(api_client):
     assert "date" in bad_date.json()
 
 
+def test_catalogue_excludes_sourced_term_without_licence(
+    api_client, make_term_with_task, make_version_on_task, add_preference
+):
+    _, unlicensed_task = make_term_with_task(
+        text_ru="Нелицензированный термин", source="External Source", licence=""
+    )
+    unlicensed_v = make_version_on_task(unlicensed_task, text_kk="жабық нұсқа")
+    add_preference(unlicensed_v)
+
+    resp = api_client.get(CATALOGUE_URL, {"date": "2026-11-03"})
+    assert resp.status_code == 200
+    assert resp.json()["word_of_the_day"] is None
+    assert resp.json()["top_words"] == []
+
+
 def test_catalogue_word_of_the_day_is_deterministic_varies_by_date_and_ignores_ineligible(
     api_client, user_factory, make_term_with_task, make_version_on_task
 ):
@@ -167,4 +182,3 @@ def test_catalogue_connector_hints_only_published_and_moderator_admin_actions(
     )
     draft_hint.refresh_from_db()
     assert draft_hint.is_published is False
-

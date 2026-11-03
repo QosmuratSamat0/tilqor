@@ -1,4 +1,4 @@
-"""Part 6 (TIL-30 seed data): load_seed command idempotency and atomic validation."""
+"""Part 6 (TIL-30 seed data): load_seed command idempotency, term licences, and validation."""
 
 import shutil
 
@@ -31,10 +31,21 @@ def test_load_seed_creates_terms_tasks_submitted_variants_sentences_and_unpublis
     assert ConnectorHint.objects.count() == 2
     assert ConnectorHint.objects.filter(is_published=True).count() == 0
 
-    versions = list(ContributionVersion.objects.all())
+    cache_term = Term.objects.get(text_ru="кэш")
+    assert cache_term.source == "Termincom.kz"
+    assert cache_term.licence == "CC BY-SA 4.0"
+
+    inhibitor_term = Term.objects.get(text_ru="ингибитор")
+    assert inhibitor_term.source == ""
+    assert inhibitor_term.licence == ""
+
+    versions = list(ContributionVersion.objects.select_related("contribution__task__term"))
     assert len(versions) == 5
     assert all(v.status == ContributionVersion.Status.SUBMITTED for v in versions)
-    assert all(v.contribution.author.public_name == "seed" for v in versions)
+    for version in versions:
+        term = version.contribution.task.term
+        assert version.source == term.source
+        assert version.licence == term.licence
 
     counts_before = (
         Term.objects.count(),
@@ -81,3 +92,26 @@ def test_load_seed_stops_with_file_and_line_number_and_rolls_back_on_broken_row(
     assert Task.objects.count() == 0
     assert ContributionVersion.objects.count() == 0
 
+
+def test_load_seed_rejects_sourced_term_without_licence_and_saves_nothing(
+    seed_fixtures_dir, tmp_path
+):
+    for filename in ("terms.csv", "sentences.csv", "connectors.csv"):
+        shutil.copy(seed_fixtures_dir / filename, tmp_path / filename)
+
+    with (tmp_path / "terms.csv").open("a", encoding="utf-8") as handle:
+        handle.write("протокол,Набор правил обмена данными.,it,хаттама,Termincom.kz,\n")
+
+    with pytest.raises(CommandError) as exc_info:
+        call_command("load_seed", "--dir", str(tmp_path))
+
+    message = str(exc_info.value)
+    assert "terms.csv" in message
+    assert "line 5" in message
+    assert "licence" in message
+
+    assert Term.objects.count() == 0
+    assert SourceSentence.objects.count() == 0
+    assert ConnectorHint.objects.count() == 0
+    assert Task.objects.count() == 0
+    assert ContributionVersion.objects.count() == 0

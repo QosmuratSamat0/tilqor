@@ -47,6 +47,7 @@ def _accept_version(version: ContributionVersion) -> Finalization:
 
 def test_exports_csv_json_and_manifest_match_ids_provenance_and_exclude_ineligible(api_client):
     author_ok = _create_user("export_author_ok", display_name="Айгерім С.", accepted_terms=True)
+    seed_user = _create_user("seed", display_name="seed", accepted_terms=True)
     author_no_terms = _create_user(
         "export_author_noterms", display_name="Terms Not Accepted", accepted_terms=False
     )
@@ -93,12 +94,25 @@ def test_exports_csv_json_and_manifest_match_ids_provenance_and_exclude_ineligib
         definition="Сетевое устройство.",
         domain=Domain.ENGINEERING,
         source="Termincom.kz",
+        licence="CC BY-NC-SA 4.0",
+        source_url="https://termincom.kz/router",
     )
     term_task = Task.objects.create(
         type=Task.Type.TERM,
         domain=Domain.ENGINEERING,
         term=term,
     )
+    seed_term_contrib = Contribution.objects.create(task=term_task, author=seed_user)
+    eligible_seed_term_v = ContributionVersion.objects.create(
+        contribution=seed_term_contrib,
+        number=1,
+        text_kk="маршруттауыш",
+        status=ContributionVersion.Status.ACCEPTED,
+        source="Termincom.kz",
+        licence="CC BY-NC-SA 4.0",
+    )
+    fin_seed_term = _accept_version(eligible_seed_term_v)
+
     term_contrib = Contribution.objects.create(task=term_task, author=author_ok)
     eligible_term_v1 = ContributionVersion.objects.create(
         contribution=term_contrib,
@@ -174,12 +188,15 @@ def test_exports_csv_json_and_manifest_match_ids_provenance_and_exclude_ineligib
     assert "\\u" not in json_text
     json_records = json.loads(json_text)["records"]
 
-    expected_ids = [eligible_trans_v2.pk, eligible_term_v1.pk]
+    expected_ids = [
+        eligible_trans_v2.pk,
+        eligible_seed_term_v.pk,
+        eligible_term_v1.pk,
+    ]
     assert [int(r["id"]) for r in csv_rows] == expected_ids
     assert [r["id"] for r in json_records] == expected_ids
 
-    first_json = json_records[0]
-    assert first_json == {
+    assert json_records[0] == {
         "id": eligible_trans_v2.pk,
         "type": "translation",
         "domain": Domain.IT,
@@ -197,15 +214,30 @@ def test_exports_csv_json_and_manifest_match_ids_provenance_and_exclude_ineligib
     assert csv_rows[0]["text_ru"] == russian_text
     assert csv_rows[0]["text_kk"] == kazakh_text
 
-    second_json = json_records[1]
-    assert second_json == {
+    assert json_records[1] == {
+        "id": eligible_seed_term_v.pk,
+        "type": "term",
+        "domain": Domain.ENGINEERING,
+        "text_ru": "Маршрутизатор",
+        "text_kk": "маршруттауыш",
+        "version": 1,
+        "source_url": "https://termincom.kz/router",
+        "licence": "CC BY-NC-SA 4.0",
+        "attribution": "Termincom.kz",
+        "is_original": False,
+        "modifications": 0,
+        "contributor": "Termincom.kz",
+        "accepted_at": fin_seed_term.created_at.isoformat(),
+    }
+
+    assert json_records[2] == {
         "id": eligible_term_v1.pk,
         "type": "term",
         "domain": Domain.ENGINEERING,
         "text_ru": "Маршрутизатор",
         "text_kk": "бағыттауыш",
         "version": 1,
-        "source_url": "",
+        "source_url": "https://termincom.kz/router",
         "licence": settings.DATASET_LICENCE,
         "attribution": "Termincom.kz",
         "is_original": False,
@@ -213,16 +245,24 @@ def test_exports_csv_json_and_manifest_match_ids_provenance_and_exclude_ineligib
         "contributor": "Айгерім С.",
         "accepted_at": fin_term.created_at.isoformat(),
     }
+    assert all(r["contributor"] != "seed" for r in json_records)
+    assert all(r["contributor"] != "seed" for r in csv_rows)
 
     manifest = manifest_resp.json()
-    assert manifest["record_count"] == 2
+    assert manifest["record_count"] == 3
     assert manifest["terms_version"] == settings.PUBLICATION_TERMS_VERSION
     assert manifest["dataset_licence"] == settings.DATASET_LICENCE
     assert manifest["conditions"] == [
         {
             "licence": "CC BY 4.0",
             "attribution": "Termincom.kz",
-            "source_url": "",
+            "source_url": "https://termincom.kz/router",
+            "count": 1,
+        },
+        {
+            "licence": "CC BY-NC-SA 4.0",
+            "attribution": "Termincom.kz",
+            "source_url": "https://termincom.kz/router",
             "count": 1,
         },
         {
@@ -243,4 +283,56 @@ def test_exports_csv_json_and_manifest_match_ids_provenance_and_exclude_ineligib
         assert author_ok.email not in payload_str
         assert author_no_terms.username not in payload_str
         assert author_no_terms.email not in payload_str
+        assert seed_user.email not in payload_str
 
+
+def test_export_excludes_sourced_term_without_licence_and_seed_variant_without_licence(api_client):
+    participant = _create_user("part_user", display_name="Марат К.", accepted_terms=True)
+    seed_user = _create_user("seed", display_name="seed", accepted_terms=True)
+
+    unlicensed_term = Term.objects.create(
+        text_ru="Закрытый термин",
+        definition="Термин с источником без лицензии.",
+        domain=Domain.IT,
+        source="Unlicensed Dictionary",
+        licence="",
+    )
+    unlicensed_task = Task.objects.create(
+        type=Task.Type.TERM,
+        domain=Domain.IT,
+        term=unlicensed_term,
+    )
+    c1 = Contribution.objects.create(task=unlicensed_task, author=participant)
+    v1 = ContributionVersion.objects.create(
+        contribution=c1,
+        number=1,
+        text_kk="жабық термин",
+        status=ContributionVersion.Status.ACCEPTED,
+    )
+    _accept_version(v1)
+
+    licensed_term = Term.objects.create(
+        text_ru="Открытый термин",
+        definition="Термин с лицензией.",
+        domain=Domain.IT,
+        source="Termincom.kz",
+        licence="CC BY-SA 4.0",
+    )
+    licensed_task = Task.objects.create(
+        type=Task.Type.TERM,
+        domain=Domain.IT,
+        term=licensed_term,
+    )
+    c2 = Contribution.objects.create(task=licensed_task, author=seed_user)
+    v2 = ContributionVersion.objects.create(
+        contribution=c2,
+        number=1,
+        text_kk="лицензиясыз seed нұсқа",
+        status=ContributionVersion.Status.ACCEPTED,
+        source="Termincom.kz",
+        licence="",
+    )
+    _accept_version(v2)
+
+    assert api_client.get(JSON_URL).json()["records"] == []
+    assert api_client.get(MANIFEST_URL).json()["record_count"] == 0

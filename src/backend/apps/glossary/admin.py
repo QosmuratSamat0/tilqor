@@ -14,12 +14,14 @@ class TermAdmin(admin.ModelAdmin):
         "id",
         "text_ru",
         "domain",
+        "source",
+        "licence",
         "recommended_version",
         "recommended_by",
         "recommended_at",
     )
-    list_filter = ("domain",)
-    search_fields = ("text_ru", "definition")
+    list_filter = ("domain", "licence")
+    search_fields = ("text_ru", "definition", "source")
     readonly_fields = (
         "recommended_version",
         "recommended_reason",

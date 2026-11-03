@@ -11,6 +11,25 @@ from common.choices import Domain
 
 def eligible_versions():
     """Return accepted, non-withdrawn, non-control versions with valid terms and source licence."""
+    translation_eligible = Q(contribution__task__type=Task.Type.TRANSLATION) & (
+        Q(contribution__task__source_sentence__is_original=True)
+        | ~Q(contribution__task__source_sentence__licence="")
+    )
+    term_source_eligible = (
+        Q(contribution__task__term__source="")
+        | ~Q(contribution__task__term__licence="")
+    )
+    is_seed_variant = (
+        ~Q(source="")
+        | Q(contribution__author__username="seed")
+        | Q(contribution__author__username__startswith="seed_")
+    )
+    term_variant_eligible = ~is_seed_variant | ~Q(licence="")
+    term_eligible = (
+        Q(contribution__task__type=Task.Type.TERM)
+        & term_source_eligible
+        & term_variant_eligible
+    )
     return (
         ContributionVersion.objects.filter(
             status=ContributionVersion.Status.ACCEPTED,
@@ -19,11 +38,7 @@ def eligible_versions():
             contribution__author__accepted_terms_at__isnull=False,
         )
         .exclude(contribution__author__accepted_terms_version="")
-        .filter(
-            Q(contribution__task__type=Task.Type.TERM)
-            | Q(contribution__task__source_sentence__is_original=True)
-            | ~Q(contribution__task__source_sentence__licence="")
-        )
+        .filter(translation_eligible | term_eligible)
     )
 
 

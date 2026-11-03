@@ -65,6 +65,8 @@ def load_seed_directory(seed_dir: Path) -> dict[str, int]:
             defaults={
                 "definition": row.definition,
                 "source": row.source,
+                "licence": row.licence,
+                "source_url": row.source_url,
             },
         )
         if term_created:
@@ -97,6 +99,8 @@ def load_seed_directory(seed_dir: Path) -> dict[str, int]:
                 number=1,
                 text_kk=variant_text,
                 status=ContributionVersion.Status.SUBMITTED,
+                source=row.source,
+                licence=row.licence,
             )
             existing_texts.add(variant_text)
             created_counts["term_variants"] += 1
