@@ -28,6 +28,13 @@ class TaskSerializer(serializers.ModelSerializer):
         return task.term.definition if task.term_id else ""
 
 
+class PaginatedTaskListSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True)
+    previous = serializers.URLField(allow_null=True)
+    results = TaskSerializer(many=True)
+
+
 class VariantSerializer(serializers.ModelSerializer):
     public_name = serializers.CharField(source="contribution.author.public_name", read_only=True)
 

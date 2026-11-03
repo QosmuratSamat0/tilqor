@@ -137,6 +137,7 @@ docker compose up --build
 ```
 
 Check that it works: http://localhost:8000/api/health/ should return `{"status": "ok", "database": "ok"}`.
+Swagger UI is available at http://localhost:8000/api/docs/ and the OpenAPI schema at `/api/schema/`.
 
 **3. Run the tests.** The tests need PostgreSQL, so start only the database in Docker and run pytest locally:
 

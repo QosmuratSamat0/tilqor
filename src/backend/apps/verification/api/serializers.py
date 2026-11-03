@@ -36,11 +36,11 @@ class QueueSerializer(serializers.ModelSerializer):
         fields = ("id", "number", "text_kk", "task_type", "domain", "text_ru", "definition")
         read_only_fields = fields
 
-    def get_text_ru(self, version):
+    def get_text_ru(self, version) -> str:
         task = version.contribution.task
         return task.source_sentence.text_ru if task.source_sentence_id else task.term.text_ru
 
-    def get_definition(self, version):
+    def get_definition(self, version) -> str:
         task = version.contribution.task
         return task.term.definition if task.term_id else ""
 

@@ -53,3 +53,6 @@ jobs:
 
       - name: Run tests (pytest)
         run: pytest -v
+
+      - name: Validate OpenAPI schema
+        run: python src/backend/manage.py spectacular --validate --fail-on-warn --file /tmp/schema.yml

@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
     "apps.core",
     "apps.accounts",
     "apps.contributions",
@@ -127,6 +128,16 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Tilqor API",
+    "VERSION": "0.1.0",
+    "DESCRIPTION": "Crowdsourcing platform for collecting and verifying Kazakh language data.",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 # Session cookies are not readable from JavaScript (NFR-03).
@@ -141,4 +152,3 @@ CONTRIBUTION_MAX_LENGTH_TRANSLATION = 1000
 CONTRIBUTION_MAX_LENGTH_TERM = 200
 RUSSIAN_CONNECTORS = ["и", "но", "что", "потому что", "который", "или", "если"]
 TASK_LIST_PAGE_SIZE = 20
-

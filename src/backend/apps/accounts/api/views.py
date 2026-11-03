@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate, login, logout
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -12,6 +13,11 @@ from apps.accounts.api.serializers import (
     RegisterSerializer,
 )
 from apps.accounts.services import register_user
+from common.serializers import (
+    AnyErrorSerializer,
+    DetailErrorSerializer,
+    FieldErrorsSerializer,
+)
 
 
 @method_decorator(ensure_csrf_cookie, name="get")
@@ -20,6 +26,7 @@ class CsrfView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(tags=["auth"], responses={204: None})
     def get(self, request):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -27,6 +34,11 @@ class CsrfView(APIView):
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["auth"],
+        request=RegisterSerializer,
+        responses={201: CurrentUserSerializer, 400: FieldErrorsSerializer},
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -38,6 +50,11 @@ class RegisterView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=["auth"],
+        request=LoginSerializer,
+        responses={200: CurrentUserSerializer, 400: AnyErrorSerializer},
+    )
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -53,6 +70,11 @@ class LoginView(APIView):
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["auth"],
+        request=None,
+        responses={204: None, 403: DetailErrorSerializer},
+    )
     def post(self, request):
         logout(request)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -61,5 +83,9 @@ class LogoutView(APIView):
 class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=["auth"],
+        responses={200: CurrentUserSerializer, 403: DetailErrorSerializer},
+    )
     def get(self, request):
         return Response(CurrentUserSerializer(request.user).data)
