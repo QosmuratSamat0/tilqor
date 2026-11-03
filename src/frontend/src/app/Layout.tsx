@@ -86,16 +86,6 @@ export function Layout() {
             >
               <button
                 type="button"
-                onClick={() => handleLanguageChange("ru")}
-                aria-pressed={currentLang === "ru"}
-                className={`${styles.langButton} ${
-                  currentLang === "ru" ? styles.langButtonActive : ""
-                }`.trim()}
-              >
-                {t("app.langRu")}
-              </button>
-              <button
-                type="button"
                 onClick={() => handleLanguageChange("kk")}
                 aria-pressed={currentLang === "kk"}
                 className={`${styles.langButton} ${
@@ -103,6 +93,16 @@ export function Layout() {
                 }`.trim()}
               >
                 {t("app.langKk")}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLanguageChange("ru")}
+                aria-pressed={currentLang === "ru"}
+                className={`${styles.langButton} ${
+                  currentLang === "ru" ? styles.langButtonActive : ""
+                }`.trim()}
+              >
+                {t("app.langRu")}
               </button>
             </div>
 
