@@ -158,7 +158,7 @@ def daily_catalogue(*, raw_date: str | None = None) -> dict:
         eligible_versions()
         .filter(contribution__task__type=Task.Type.TERM)
         .select_related("contribution__author", "contribution__task__term")
-        .annotate(preference_count=Count("preferences"))
+        .annotate(preference_count=Count("variantpreference"))
         .order_by("-preference_count", "pk")[:10]
     )
     top_words = [

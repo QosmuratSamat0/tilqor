@@ -1,0 +1,246 @@
+"""FR-06, FR-20, NFR-01, NFR-04, NFR-12: CSV, JSON and manifest export tests."""
+
+import csv
+import io
+import json
+import unicodedata
+
+import pytest
+from django.conf import settings
+from django.utils import timezone
+
+from apps.accounts.models import User
+from apps.contributions.models import Contribution, ContributionVersion, SourceSentence, Task
+from apps.exports.domain import EXPORT_COLUMNS
+from apps.glossary.models import Term
+from apps.verification.models import Finalization, QualitySettings
+from common.choices import Domain
+
+pytestmark = pytest.mark.django_db
+
+CSV_URL = "/api/exports/dataset.csv"
+JSON_URL = "/api/exports/dataset.json"
+MANIFEST_URL = "/api/exports/manifest.json"
+
+
+def _create_user(username: str, *, display_name: str, accepted_terms: bool = True) -> User:
+    kwargs = {
+        "username": username,
+        "email": f"{username}@private-domain.example",
+        "password": "Kazakh-Tilqor-2026",
+        "display_name": display_name,
+    }
+    if accepted_terms:
+        kwargs["accepted_terms_at"] = timezone.now()
+        kwargs["accepted_terms_version"] = settings.PUBLICATION_TERMS_VERSION
+    return User.objects.create_user(**kwargs)
+
+
+def _accept_version(version: ContributionVersion) -> Finalization:
+    q_settings = QualitySettings.objects.get(is_active=True)
+    return Finalization.objects.create(
+        version=version,
+        decision="accept",
+        quality_settings=q_settings,
+    )
+
+
+def test_exports_csv_json_and_manifest_match_ids_provenance_and_exclude_ineligible(api_client):
+    author_ok = _create_user("export_author_ok", display_name="Айгерім С.", accepted_terms=True)
+    author_no_terms = _create_user(
+        "export_author_noterms", display_name="Terms Not Accepted", accepted_terms=False
+    )
+
+    kazakh_text = unicodedata.normalize(
+        "NFC",
+        "Әә Ғғ Ққ Ңң Өө Ұұ Үү Һһ Іі — Қазақ тіліндегі толық сөйлем үлгісі.",
+    )
+    russian_text = unicodedata.normalize(
+        "NFC",
+        "Проверка всех букв русского алфавита: Ёё, Йй, Щщ, Ъъ, Ыы, Ээ, Юю, Яя.",
+    )
+
+    licensed_sentence = SourceSentence.objects.create(
+        text_ru=russian_text,
+        domain=Domain.IT,
+        source_url="https://example.org/corpus/42",
+        licence="CC BY-SA 4.0",
+        attribution="OpenKazakh Corpus",
+        is_original=False,
+    )
+    translation_task = Task.objects.create(
+        type=Task.Type.TRANSLATION,
+        domain=Domain.IT,
+        source_sentence=licensed_sentence,
+    )
+    trans_contrib = Contribution.objects.create(task=translation_task, author=author_ok)
+    ContributionVersion.objects.create(
+        contribution=trans_contrib,
+        number=1,
+        text_kk="Алғашқы түзетілген нұсқа",
+        status=ContributionVersion.Status.NEEDS_EDIT,
+    )
+    eligible_trans_v2 = ContributionVersion.objects.create(
+        contribution=trans_contrib,
+        number=2,
+        text_kk=kazakh_text,
+        status=ContributionVersion.Status.ACCEPTED,
+    )
+    fin_trans = _accept_version(eligible_trans_v2)
+
+    term = Term.objects.create(
+        text_ru="Маршрутизатор",
+        definition="Сетевое устройство.",
+        domain=Domain.ENGINEERING,
+        source="Termincom.kz",
+    )
+    term_task = Task.objects.create(
+        type=Task.Type.TERM,
+        domain=Domain.ENGINEERING,
+        term=term,
+    )
+    term_contrib = Contribution.objects.create(task=term_task, author=author_ok)
+    eligible_term_v1 = ContributionVersion.objects.create(
+        contribution=term_contrib,
+        number=1,
+        text_kk="бағыттауыш",
+        status=ContributionVersion.Status.ACCEPTED,
+    )
+    fin_term = _accept_version(eligible_term_v1)
+
+    for idx, bad_kwargs in enumerate(
+        [
+            {"status": ContributionVersion.Status.SUBMITTED, "text_kk": "excluded_submitted"},
+            {"status": ContributionVersion.Status.IN_REVIEW, "text_kk": "excluded_in_review"},
+            {"status": ContributionVersion.Status.REJECTED, "text_kk": "excluded_rejected"},
+            {"status": ContributionVersion.Status.NEEDS_EDIT, "text_kk": "excluded_needs_edit"},
+            {
+                "status": ContributionVersion.Status.ACCEPTED,
+                "is_control": True,
+                "reference_decision": "accept",
+                "text_kk": "excluded_control",
+            },
+            {
+                "status": ContributionVersion.Status.ACCEPTED,
+                "is_withdrawn": True,
+                "text_kk": "excluded_withdrawn",
+            },
+        ]
+    ):
+        s = SourceSentence.objects.create(
+            text_ru=f"Исключённое предложение {idx}",
+            domain=Domain.IT,
+            is_original=True,
+        )
+        t = Task.objects.create(type=Task.Type.TRANSLATION, domain=Domain.IT, source_sentence=s)
+        c = Contribution.objects.create(task=t, author=author_ok)
+        ContributionVersion.objects.create(contribution=c, number=1, **bad_kwargs)
+
+    unaccepted_sentence = SourceSentence.objects.create(
+        text_ru="Предложение без согласия автора",
+        domain=Domain.MEDICINE,
+        is_original=True,
+    )
+    unaccepted_task = Task.objects.create(
+        type=Task.Type.TRANSLATION,
+        domain=Domain.MEDICINE,
+        source_sentence=unaccepted_sentence,
+    )
+    unaccepted_contrib = Contribution.objects.create(
+        task=unaccepted_task, author=author_no_terms
+    )
+    unaccepted_v = ContributionVersion.objects.create(
+        contribution=unaccepted_contrib,
+        number=1,
+        text_kk="excluded_unaccepted_terms",
+        status=ContributionVersion.Status.ACCEPTED,
+    )
+    _accept_version(unaccepted_v)
+
+    csv_resp = api_client.get(CSV_URL)
+    json_resp = api_client.get(JSON_URL)
+    manifest_resp = api_client.get(MANIFEST_URL)
+
+    assert csv_resp.status_code == 200
+    assert json_resp.status_code == 200
+    assert manifest_resp.status_code == 200
+
+    assert csv_resp.content.startswith(b"\xef\xbb\xbf")
+    csv_text = csv_resp.content.decode("utf-8-sig")
+    csv_rows = list(csv.DictReader(io.StringIO(csv_text)))
+    assert tuple(csv_rows[0].keys()) == EXPORT_COLUMNS
+
+    json_text = json_resp.content.decode("utf-8")
+    assert "\\u" not in json_text
+    json_records = json.loads(json_text)["records"]
+
+    expected_ids = [eligible_trans_v2.pk, eligible_term_v1.pk]
+    assert [int(r["id"]) for r in csv_rows] == expected_ids
+    assert [r["id"] for r in json_records] == expected_ids
+
+    first_json = json_records[0]
+    assert first_json == {
+        "id": eligible_trans_v2.pk,
+        "type": "translation",
+        "domain": Domain.IT,
+        "text_ru": russian_text,
+        "text_kk": kazakh_text,
+        "version": 2,
+        "source_url": "https://example.org/corpus/42",
+        "licence": "CC BY-SA 4.0",
+        "attribution": "OpenKazakh Corpus",
+        "is_original": False,
+        "modifications": 1,
+        "contributor": "Айгерім С.",
+        "accepted_at": fin_trans.created_at.isoformat(),
+    }
+    assert csv_rows[0]["text_ru"] == russian_text
+    assert csv_rows[0]["text_kk"] == kazakh_text
+
+    second_json = json_records[1]
+    assert second_json == {
+        "id": eligible_term_v1.pk,
+        "type": "term",
+        "domain": Domain.ENGINEERING,
+        "text_ru": "Маршрутизатор",
+        "text_kk": "бағыттауыш",
+        "version": 1,
+        "source_url": "",
+        "licence": settings.DATASET_LICENCE,
+        "attribution": "Termincom.kz",
+        "is_original": False,
+        "modifications": 0,
+        "contributor": "Айгерім С.",
+        "accepted_at": fin_term.created_at.isoformat(),
+    }
+
+    manifest = manifest_resp.json()
+    assert manifest["record_count"] == 2
+    assert manifest["terms_version"] == settings.PUBLICATION_TERMS_VERSION
+    assert manifest["dataset_licence"] == settings.DATASET_LICENCE
+    assert manifest["conditions"] == [
+        {
+            "licence": "CC BY 4.0",
+            "attribution": "Termincom.kz",
+            "source_url": "",
+            "count": 1,
+        },
+        {
+            "licence": "CC BY-SA 4.0",
+            "attribution": "OpenKazakh Corpus",
+            "source_url": "https://example.org/corpus/42",
+            "count": 1,
+        },
+    ]
+
+    for payload_str in (csv_text, json_text, manifest_resp.content.decode("utf-8")):
+        assert "excluded_" not in payload_str
+        assert "Алғашқы түзетілген нұсқа" not in payload_str
+        assert "@" not in payload_str
+        assert "email" not in payload_str
+        assert "username" not in payload_str
+        assert author_ok.username not in payload_str
+        assert author_ok.email not in payload_str
+        assert author_no_terms.username not in payload_str
+        assert author_no_terms.email not in payload_str
+
