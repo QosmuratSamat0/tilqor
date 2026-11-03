@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import i18n from "../index";
+import { describe, expect, it, vi } from "vitest";
+import i18n, { getInitialLanguage, setAppLanguage } from "../index";
 import ru from "../ru.json";
 import kk from "../kk.json";
 
@@ -29,5 +29,27 @@ describe("i18n translation files (ru.json and kk.json)", () => {
     expect(i18n.t("nav.dictionary")).toBe(ru.nav.dictionary);
     await i18n.changeLanguage("ru");
   });
-});
 
+  it("falls back to Russian and does not throw when localStorage throws", () => {
+    const getItemSpy = vi
+      .spyOn(Storage.prototype, "getItem")
+      .mockImplementation(() => {
+        throw new Error("SecurityError: localStorage is disabled");
+      });
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("QuotaExceededError: storage blocked");
+      });
+
+    try {
+      expect(getInitialLanguage()).toBe("ru");
+      expect(() => setAppLanguage("kk")).not.toThrow();
+      expect(document.documentElement.lang).toBe("kk");
+      setAppLanguage("ru");
+    } finally {
+      getItemSpy.mockRestore();
+      setItemSpy.mockRestore();
+    }
+  });
+});

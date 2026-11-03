@@ -6,12 +6,16 @@ import kk from "./kk.json";
 export const LANGUAGE_STORAGE_KEY = "tilqor_lang";
 export type SupportedLanguage = "ru" | "kk";
 
-function getInitialLanguage(): SupportedLanguage {
-  if (typeof window !== "undefined" && window.localStorage) {
-    const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (saved === "kk" || saved === "ru") {
-      return saved;
+export function getInitialLanguage(): SupportedLanguage {
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      if (saved === "kk" || saved === "ru") {
+        return saved;
+      }
     }
+  } catch {
+    return "ru";
   }
   return "ru";
 }
@@ -30,8 +34,12 @@ void i18n.use(initReactI18next).init({
 });
 
 export function setAppLanguage(lang: SupportedLanguage): void {
-  if (typeof window !== "undefined" && window.localStorage) {
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    }
+  } catch {
+    // Ignore storage errors in private windows or blocked storage
   }
   if (typeof document !== "undefined") {
     document.documentElement.lang = lang;
@@ -40,4 +48,3 @@ export function setAppLanguage(lang: SupportedLanguage): void {
 }
 
 export default i18n;
-
