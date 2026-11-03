@@ -1,0 +1,5 @@
+# Caddy gets a Let's Encrypt certificate for SITE_ADDRESS and redirects HTTP to HTTPS (NFR-03).
+{$SITE_ADDRESS} {
+	encode gzip
+	reverse_proxy backend:8000
+}

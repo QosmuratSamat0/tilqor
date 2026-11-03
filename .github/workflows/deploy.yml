@@ -1,0 +1,54 @@
+name: Deploy
+
+# Manual only: Actions → Deploy → Run workflow (branch: normally main).
+# The server keeps no source code: this job builds the image, copies the compose file
+# and deploy/ to ~/tilqor on the server and starts the new image there.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/qosmuratsamat0/tilqor-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and push the image to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker build -f src/backend/Dockerfile.prod -t "$IMAGE:$GITHUB_SHA" src/backend
+          docker push "$IMAGE:$GITHUB_SHA"
+
+      - name: Prepare SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Copy stack files and deploy
+        env:
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy "$TARGET" "mkdir -p ~/tilqor/deploy"
+          scp -i ~/.ssh/deploy docker-compose.prod.yml "$TARGET:tilqor/"
+          scp -i ~/.ssh/deploy deploy/Caddyfile deploy/*.sh deploy/prod.example.env "$TARGET:tilqor/deploy/"
+          ssh -i ~/.ssh/deploy "$TARGET" \
+            "chmod +x ~/tilqor/deploy/*.sh && ~/tilqor/deploy/init-env.sh && ~/tilqor/deploy/deploy.sh '$GITHUB_SHA'"

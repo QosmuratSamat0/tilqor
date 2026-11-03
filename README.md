@@ -86,6 +86,7 @@ Comparison of alternatives: [technology comparison](docs/tech-comparison.md).
 | [Survey results](docs/survey/results.md) | 14 responses, verified findings and assumptions |
 | [Survey template](docs/survey/template.md) | Original questionnaire (TIL-2) |
 | [Architecture decisions](docs/adr/README.md) | Why the main technical decisions were taken (ADR) |
+| [Deployment](docs/deploy.md) | Production server, HTTPS, backups and restore |
 
 Diagrams (PlantUML sources in [`diagrams/src`](diagrams/src), images in [`diagrams/png`](diagrams/png)):
 [system context](diagrams/png/context.png) · [use cases](diagrams/png/use-case.png) · [components](diagrams/png/components.png)
