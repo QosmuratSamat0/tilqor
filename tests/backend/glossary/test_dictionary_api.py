@@ -1,4 +1,4 @@
-"""FR-17, FR-18, NFR-01, NFR-04: dictionary list, search, detail, and moderator recommendation."""
+"""FR-17, FR-18, NFR-01, NFR-04, NFR-05: dictionary list, search, detail, and recommendation."""
 
 import unicodedata
 
@@ -31,7 +31,7 @@ def test_dictionary_list_only_includes_terms_with_eligible_variants_and_supports
     api_client, user_factory, make_term_with_task, make_version_on_task
 ):
     eligible_term, eligible_task = make_term_with_task(
-        text_ru="Маршрутизатор", domain=Domain.IT, source="Termincom.kz"
+        text_ru="Маршрутизатор", domain=Domain.IT, source="Termincom.kz", licence="CC BY 4.0"
     )
     eligible_v = make_version_on_task(eligible_task, text_kk="бағыттауыш")
 
@@ -78,12 +78,25 @@ def test_dictionary_list_only_includes_terms_with_eligible_variants_and_supports
     ]
 
 
-def test_dictionary_search_matches_russian_and_kazakh_uppercase_letters_and_filters_domain(
+def test_unlicensed_sourced_term_is_excluded_from_dictionary_list_and_detail(
     api_client, make_term_with_task, make_version_on_task
 ):
-    kazakh_all_letters = "Әділет Ғылым Қоғам Ңұсқа Өріс Ұлт Үлес Һақ Ілім"
+    unlicensed_term, unlicensed_task = make_term_with_task(
+        text_ru="Шлюз", domain=Domain.IT, source="External Dict", licence=""
+    )
+    make_version_on_task(unlicensed_task, text_kk="шлюз")
+
+    list_resp = api_client.get(DICTIONARY_URL)
+    assert list_resp.status_code == 200
+    assert list_resp.data["results"] == []
+    assert api_client.get(f"{DICTIONARY_URL}{unlicensed_term.pk}/").status_code == 404
+
+
+def test_dictionary_search_matches_russian_and_filters_domain(
+    api_client, make_term_with_task, make_version_on_task
+):
     it_term, it_task = make_term_with_task(text_ru="Алгоритм поиска", domain=Domain.IT)
-    make_version_on_task(it_task, text_kk=kazakh_all_letters)
+    make_version_on_task(it_task, text_kk="іздеу алгоритмі")
     make_version_on_task(
         it_task,
         text_kk="Жасырын тексерілмеген сөз",
@@ -97,23 +110,6 @@ def test_dictionary_search_matches_russian_and_kazakh_uppercase_letters_and_filt
     assert ru_resp.status_code == 200
     assert [item["id"] for item in ru_resp.data["results"]] == [it_term.pk]
 
-    uppercase_queries = (
-        "ӘДІЛЕТ",
-        "ҒЫЛЫМ",
-        "ҚОҒАМ",
-        "ҢҰСҚА",
-        "ӨРІС",
-        "ҰЛТ",
-        "ҮЛЕС",
-        "ҺАҚ",
-        "ІЛІМ",
-    )
-    for uppercase_query in uppercase_queries:
-        decomposed_q = unicodedata.normalize("NFD", f"  {uppercase_query}  ")
-        kk_resp = api_client.get(DICTIONARY_URL, {"q": decomposed_q})
-        assert kk_resp.status_code == 200
-        assert [item["id"] for item in kk_resp.data["results"]] == [it_term.pk]
-
     non_eligible_search = api_client.get(DICTIONARY_URL, {"q": "Жасырын"})
     assert non_eligible_search.status_code == 200
     assert non_eligible_search.data["results"] == []
@@ -125,6 +121,49 @@ def test_dictionary_search_matches_russian_and_kazakh_uppercase_letters_and_filt
     bad_domain_resp = api_client.get(DICTIONARY_URL, {"domain": "invalid-domain"})
     assert bad_domain_resp.status_code == 400
     assert "domain" in bad_domain_resp.data
+
+
+@pytest.mark.parametrize(
+    "uppercase_query",
+    [
+        "ӘДІЛЕТ",
+        "ҒЫЛЫМ",
+        "ҚОҒАМ",
+        "ҢҰСҚА",
+        "ӨРІС",
+        "ҰЛТ",
+        "ҮЛЕС",
+        "ҺАҚ",
+        "ІЛІМ",
+    ],
+)
+def test_dictionary_search_folds_uppercase_kazakh_letters_in_database(
+    api_client, make_term_with_task, make_version_on_task, uppercase_query
+):
+    kazakh_all_letters = "Әділет Ғылым Қоғам Ңұсқа Өріс Ұлт Үлес Һақ Ілім"
+    it_term, it_task = make_term_with_task(text_ru="Алгоритм поиска", domain=Domain.IT)
+    make_version_on_task(it_task, text_kk=kazakh_all_letters)
+
+    decomposed_q = unicodedata.normalize("NFD", f"  {uppercase_query}  ")
+    kk_resp = api_client.get(DICTIONARY_URL, {"q": decomposed_q})
+    assert kk_resp.status_code == 200
+    assert [item["id"] for item in kk_resp.data["results"]] == [it_term.pk]
+
+
+def test_dictionary_list_page_of_twenty_terms_uses_constant_queries(
+    api_client, django_assert_max_num_queries, make_term_with_task, make_version_on_task
+):
+    for idx in range(25):
+        _, task = make_term_with_task(text_ru=f"Термин страницы {idx}", source="", licence="")
+        make_version_on_task(task, text_kk=f"бірінші нұсқа {idx}")
+        make_version_on_task(task, text_kk=f"екінші нұсқа {idx}")
+
+    with django_assert_max_num_queries(3):
+        response = api_client.get(DICTIONARY_URL)
+    assert response.status_code == 200
+    assert response.data["count"] == 25
+    assert len(response.data["results"]) == 20
+    assert all(len(item["alternatives"]) == 2 for item in response.data["results"])
 
 
 def test_dictionary_detail_shows_recommended_alternatives_and_pending_only_when_authenticated(

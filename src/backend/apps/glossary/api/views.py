@@ -14,7 +14,12 @@ from apps.glossary.api.serializers import (
     PaginatedDictionaryTermListSerializer,
 )
 from apps.glossary.errors import GlossaryError
-from apps.glossary.selectors import daily_catalogue, dictionary_term_detail, dictionary_terms
+from apps.glossary.selectors import (
+    daily_catalogue,
+    dictionary_term_detail,
+    dictionary_terms_queryset,
+    serialize_dictionary_terms,
+)
 from common.choices import Domain
 from common.serializers import DetailErrorSerializer, FieldErrorsSerializer
 
@@ -67,13 +72,14 @@ class DictionaryListView(APIView):
         q = request.query_params.get("q")
         domain = request.query_params.get("domain")
         try:
-            terms = dictionary_terms(q=q, domain=domain)
+            queryset = dictionary_terms_queryset(q=q, domain=domain)
         except GlossaryError as exc:
             return Response(exc.as_dict(), status=exc.status_code)
         paginator = self.pagination_class()
-        page = paginator.paginate_queryset(terms, request, view=self)
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        items = serialize_dictionary_terms(list(page))
         return paginator.get_paginated_response(
-            DictionaryTermSerializer(page, many=True).data
+            DictionaryTermSerializer(items, many=True).data
         )
 
 

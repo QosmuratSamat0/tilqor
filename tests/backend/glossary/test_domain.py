@@ -1,13 +1,9 @@
-"""Pure domain unit tests for glossary search, word of the day, and seed CSV parsing."""
-
-import unicodedata
+"""Pure domain unit tests for glossary word of the day and seed CSV parsing."""
 
 import pytest
 
 from apps.glossary.domain import (
-    normalize_search_query,
     parse_iso_date,
-    term_matches_query,
     word_of_the_day_index,
 )
 from apps.glossary.domain.seed import (
@@ -16,42 +12,6 @@ from apps.glossary.domain.seed import (
     parse_sentences_csv,
     parse_terms_csv,
 )
-
-
-def test_normalize_search_query_applies_nfc_trim_and_kazakh_casefold():
-    kazakh_upper = "  Ә Ғ Қ Ң Ө Ұ Ү Һ І  "
-    decomposed = unicodedata.normalize("NFD", kazakh_upper)
-    assert normalize_search_query(decomposed) == "ә ғ қ ң ө ұ ү һ і"
-    assert normalize_search_query(None) == ""
-    assert normalize_search_query("   ") == ""
-
-
-@pytest.mark.parametrize(
-    ("letter_upper", "letter_lower"),
-    [
-        ("Ә", "ә"),
-        ("Ғ", "ғ"),
-        ("Қ", "қ"),
-        ("Ң", "ң"),
-        ("Ө", "ө"),
-        ("Ұ", "ұ"),
-        ("Ү", "ү"),
-        ("Һ", "һ"),
-        ("І", "і"),
-    ],
-)
-def test_term_matches_query_with_all_uppercase_kazakh_letters(letter_upper, letter_lower):
-    variant_text = f"Сөз {letter_lower}ріп үлгісі"
-    assert term_matches_query(
-        query=f"  {letter_upper}РІП ",
-        text_ru="Пример",
-        eligible_texts_kk=[variant_text],
-    )
-    assert term_matches_query(
-        query=f"{letter_lower}ріп",
-        text_ru="Пример",
-        eligible_texts_kk=[f"СӨЗ {letter_upper}РІП ҮЛГІСІ"],
-    )
 
 
 def test_parse_iso_date_and_word_of_the_day_index():

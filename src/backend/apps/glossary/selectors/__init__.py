@@ -1,21 +1,29 @@
 from collections import defaultdict
 
-from django.db.models import Count, Exists, OuterRef
+from django.db.models import Count, Exists, OuterRef, Q
 from django.utils import timezone
 
+from apps.contributions.domain import normalize_text
 from apps.contributions.models import ContributionVersion, Task
 from apps.contributions.selectors import eligible_versions
-from apps.glossary.domain import parse_iso_date, term_matches_query, word_of_the_day_index
+from apps.glossary.domain import parse_iso_date, word_of_the_day_index
 from apps.glossary.errors import GlossaryError
 from apps.glossary.models import ConnectorHint, Term
 from common.choices import Domain
+
+
+def _variant_public_name(version: ContributionVersion) -> str:
+    username = version.contribution.author.username
+    if version.source or username == "seed" or username.startswith("seed_"):
+        return version.source or version.contribution.task.term.source
+    return version.contribution.author.public_name
 
 
 def _serialize_variant(version: ContributionVersion) -> dict:
     return {
         "id": version.pk,
         "text_kk": version.text_kk,
-        "public_name": version.contribution.author.public_name,
+        "public_name": _variant_public_name(version),
     }
 
 
@@ -45,45 +53,39 @@ def _build_term_payload(term: Term, eligible_list: list[ContributionVersion]) ->
     }
 
 
-def _eligible_terms_with_variants(*, domain: str | None = None):
-    has_eligible = Exists(
-        eligible_versions().filter(contribution__task__term_id=OuterRef("pk"))
+def dictionary_terms_queryset(*, q: str | None = None, domain: str | None = None):
+    """Return ordered queryset of terms that have at least one eligible variant (FR-17, NFR-05)."""
+    eligible_for_term = eligible_versions().filter(
+        contribution__task__term_id=OuterRef("pk")
     )
-    queryset = Term.objects.annotate(has_eligible=has_eligible).filter(has_eligible=True)
+    queryset = Term.objects.filter(Exists(eligible_for_term))
     if domain:
         if domain not in Domain.values:
             raise GlossaryError("Invalid domain filter.", field="domain")
         queryset = queryset.filter(domain=domain)
-    terms = list(queryset.order_by("pk"))
-    variants_by_term: dict[int, list[ContributionVersion]] = defaultdict(list)
-    if terms:
-        versions = (
-            eligible_versions()
-            .filter(contribution__task__term__in=terms)
-            .select_related("contribution__author")
-            .order_by("pk")
+    cleaned_q = normalize_text(q) if q else ""
+    if cleaned_q:
+        matching_variant = eligible_for_term.filter(text_kk__icontains=cleaned_q)
+        queryset = queryset.filter(
+            Q(text_ru__icontains=cleaned_q) | Exists(matching_variant)
         )
-        for version in versions:
-            variants_by_term[version.contribution.task.term_id].append(version)
-    return terms, variants_by_term
+    return queryset.order_by("pk")
 
 
-def dictionary_terms(*, q: str | None = None, domain: str | None = None) -> list[dict]:
-    """Return dictionary term payloads that have at least one eligible variant (FR-17)."""
-    terms, variants_by_term = _eligible_terms_with_variants(domain=domain)
-    results: list[dict] = []
-    for term in terms:
-        term_variants = variants_by_term.get(term.pk, [])
-        if not term_variants:
-            continue
-        if not term_matches_query(
-            query=q,
-            text_ru=term.text_ru,
-            eligible_texts_kk=[v.text_kk for v in term_variants],
-        ):
-            continue
-        results.append(_build_term_payload(term, term_variants))
-    return results
+def serialize_dictionary_terms(terms: list[Term]) -> list[dict]:
+    """Load eligible variants for `terms` in a single query and build dictionary payloads."""
+    if not terms:
+        return []
+    variants_by_term: dict[int, list[ContributionVersion]] = defaultdict(list)
+    versions = (
+        eligible_versions()
+        .filter(contribution__task__term__in=terms)
+        .select_related("contribution__author", "contribution__task__term")
+        .order_by("pk")
+    )
+    for version in versions:
+        variants_by_term[version.contribution.task.term_id].append(version)
+    return [_build_term_payload(term, variants_by_term[term.pk]) for term in terms]
 
 
 def dictionary_term_detail(*, term_id: int, include_pending: bool = False) -> dict | None:
@@ -91,10 +93,12 @@ def dictionary_term_detail(*, term_id: int, include_pending: bool = False) -> di
     term = Term.objects.filter(pk=term_id).first()
     if term is None:
         return None
+    if term.source and not term.licence:
+        return None
     eligible_list = list(
         eligible_versions()
         .filter(contribution__task__term_id=term.pk)
-        .select_related("contribution__author")
+        .select_related("contribution__author", "contribution__task__term")
         .order_by("pk")
     )
     payload = _build_term_payload(term, eligible_list)
@@ -109,7 +113,7 @@ def dictionary_term_detail(*, term_id: int, include_pending: bool = False) -> di
                     ContributionVersion.Status.IN_REVIEW,
                 ],
             )
-            .select_related("contribution__author")
+            .select_related("contribution__author", "contribution__task__term")
             .order_by("pk")
         )
         payload["pending"] = [
@@ -135,14 +139,20 @@ def daily_catalogue(*, raw_date: str | None = None) -> dict:
                 field="date",
             ) from exc
 
-    terms, variants_by_term = _eligible_terms_with_variants()
+    terms = list(dictionary_terms_queryset())
     word_of_the_day = None
     idx = word_of_the_day_index(iso_date, len(terms))
     if idx is not None:
         chosen_term = terms[idx]
-        chosen_variants = variants_by_term[chosen_term.pk]
+        chosen_variants = list(
+            eligible_versions()
+            .filter(contribution__task__term_id=chosen_term.pk)
+            .select_related("contribution__author", "contribution__task__term")
+            .order_by("pk")
+        )
         by_id = {v.pk: v for v in chosen_variants}
         chosen_v = by_id.get(chosen_term.recommended_version_id) or chosen_variants[0]
+        public_name = _variant_public_name(chosen_v)
         word_of_the_day = {
             "id": chosen_term.pk,
             "term_id": chosen_term.pk,
@@ -150,7 +160,7 @@ def daily_catalogue(*, raw_date: str | None = None) -> dict:
             "definition": chosen_term.definition,
             "domain": chosen_term.domain,
             "text_kk": chosen_v.text_kk,
-            "public_name": chosen_v.contribution.author.public_name,
+            "public_name": public_name,
             "variant": _serialize_variant(chosen_v),
         }
 
@@ -168,7 +178,7 @@ def daily_catalogue(*, raw_date: str | None = None) -> dict:
             "text_ru": v.contribution.task.term.text_ru,
             "domain": v.contribution.task.term.domain,
             "text_kk": v.text_kk,
-            "public_name": v.contribution.author.public_name,
+            "public_name": _variant_public_name(v),
             "preference_count": v.preference_count,
         }
         for v in top_versions
