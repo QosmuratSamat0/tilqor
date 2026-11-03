@@ -59,7 +59,6 @@ export function AuthProvider({
 
   useEffect(() => {
     if (skipInitialFetch) {
-      setIsLoading(false);
       return;
     }
     let active = true;
