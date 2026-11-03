@@ -1,6 +1,6 @@
 # Production stack: PostgreSQL + Django (gunicorn) + Caddy (HTTPS).
-# Usage on the server: docker compose -f docker-compose.prod.yml up -d --build
-# Configuration: .env created from deploy/prod.example.env (never committed).
+# The server keeps no source code: the Deploy workflow copies this file and deploy/ to ~/tilqor,
+# creates .env once (deploy/init-env.sh) and runs deploy/deploy.sh <image-tag>.
 
 services:
   db:
@@ -19,9 +19,8 @@ services:
       retries: 10
 
   backend:
-    build:
-      context: ./src/backend
-      dockerfile: Dockerfile.prod
+    # Built and pushed to GHCR by the Deploy workflow; IMAGE_TAG (commit SHA) is kept in .env.
+    image: ghcr.io/qosmuratsamat0/tilqor-backend:${IMAGE_TAG:?run deploy/deploy.sh <tag>}
     restart: unless-stopped
     env_file: .env
     environment:
