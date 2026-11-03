@@ -23,3 +23,4 @@ export const queryKeys = {
     detail: (termId: number) => ["dictionary", "detail", termId] as const,
   },
 };
+

@@ -115,3 +115,4 @@ export function DailyShowcase() {
     </div>
   );
 }
+

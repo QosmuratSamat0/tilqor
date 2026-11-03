@@ -40,3 +40,4 @@ export function setAppLanguage(lang: SupportedLanguage): void {
 }
 
 export default i18n;
+
