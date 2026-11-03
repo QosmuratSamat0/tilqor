@@ -10,13 +10,14 @@ endif
 MANAGE := $(PY) src/backend/manage.py
 
 .DEFAULT_GOAL := help
-.PHONY: help setup up down db logs run migrate shell superuser lint migrations-check test check
+.PHONY: help setup up down db logs run migrate shell superuser lint migrations-check test check fe-install fe-dev fe-check
 
 help:
 	@echo Setup
 	@echo   make setup             create .venv and install backend dependencies
+	@echo   make fe-install        install frontend dependencies (npm ci)
 	@echo Docker
-	@echo   make up                start PostgreSQL and the backend on :8000
+	@echo   make up                start PostgreSQL, backend (:8000) and frontend (:5173)
 	@echo   make down              stop the containers
 	@echo   make db                start only PostgreSQL (for local run and tests)
 	@echo   make logs              follow the backend container logs
@@ -25,11 +26,14 @@ help:
 	@echo   make migrate           apply migrations
 	@echo   make shell             Django shell
 	@echo   make superuser         create an administrator
+	@echo Local frontend
+	@echo   make fe-dev            Vite dev server on :5173
 	@echo Checks (same as CI)
 	@echo   make lint              ruff
 	@echo   make migrations-check  fail if a model change has no migration
 	@echo   make test              pytest
 	@echo   make check             lint + migrations-check + test
+	@echo   make fe-check          frontend lint + typecheck + test + build
 
 setup:
 	python -m venv .venv
@@ -69,3 +73,12 @@ test:
 	$(PY) -m pytest -q
 
 check: lint migrations-check test
+
+fe-install:
+	cd src/frontend && npm ci
+
+fe-dev:
+	cd src/frontend && npm run dev
+
+fe-check:
+	cd src/frontend && npm run lint && npm run typecheck && npm test -- --run && npm run build
