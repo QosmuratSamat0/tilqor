@@ -10,7 +10,9 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: apiProxyTarget,
-        changeOrigin: true,
+        // Keep the browser's Host header (e.g. localhost:5173) so Django's
+        // CSRF Origin check matches Host and ALLOWED_HOSTS does not see backend:8000.
+        changeOrigin: false,
       },
     },
   },
