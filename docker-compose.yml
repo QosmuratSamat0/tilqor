@@ -29,5 +29,20 @@ services:
       db:
         condition: service_healthy
 
+  frontend:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --host"
+    environment:
+      VITE_API_PROXY: http://backend:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./src/frontend:/app
+      - frontend-node-modules:/app/node_modules
+    depends_on:
+      - backend
+
 volumes:
   db-data:
+  frontend-node-modules:

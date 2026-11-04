@@ -66,7 +66,7 @@ Supervisor: **Latuta Konstantin Nikolaevich**.
 |---|---|---|
 | Backend | Python, Django + Django REST Framework | ORM, migrations, transactions, auth and admin built in |
 | Database | PostgreSQL | Relational data, transactions for voting, trigram search for the dictionary |
-| Frontend | Vite + React (preliminary) | Interactive screens over a REST API |
+| Frontend | Vite + React (TypeScript) | Interactive screens over a REST API |
 | Infrastructure | Docker, GitHub Actions | Same environment for everyone; tests on every pull request |
 
 Comparison of alternatives: [technology comparison](docs/tech-comparison.md).
@@ -122,9 +122,9 @@ These are described in the [requirements](docs/requirements.md) and the [use cas
 
 ## Setup, run and test
 
-The backend skeleton (Django + Django REST Framework + PostgreSQL) is runnable. Application features are being added in the MVP stage.
+The backend (Django + Django REST Framework + PostgreSQL) and frontend (Vite + React + TypeScript) are runnable locally or in Docker.
 
-**Requirements:** Docker Desktop; for running tests on your machine also Python 3.12.
+**Requirements:** Docker Desktop; for running locally on your machine also Python 3.12 and Node.js 22+.
 
 **1. Configure.** Copy the example configuration and replace the `change-me` values. The real `.env` is never committed.
 
@@ -132,16 +132,16 @@ The backend skeleton (Django + Django REST Framework + PostgreSQL) is runnable. 
 cp config.example.env .env
 ```
 
-**2. Run with Docker.** Starts PostgreSQL and the backend, applies migrations and serves the API on http://localhost:8000.
+**2. Run with Docker.** Starts PostgreSQL, the backend on http://localhost:8000 and the frontend on http://localhost:5173.
 
 ```bash
 docker compose up --build
 ```
 
-Check that it works: http://localhost:8000/api/health/ should return `{"status": "ok", "database": "ok"}`.
+Check that it works: http://localhost:8000/api/health/ should return `{"status": "ok", "database": "ok"}`, and the React app is served at http://localhost:5173.
 Swagger UI is available at http://localhost:8000/api/docs/ and the OpenAPI schema at `/api/schema/`.
 
-**3. Run the tests.** The tests need PostgreSQL, so start only the database in Docker and run pytest locally:
+**3. Run the backend tests.** The tests need PostgreSQL, so start only the database in Docker and run pytest locally:
 
 ```bash
 docker compose up -d db
@@ -152,16 +152,31 @@ ruff check src/backend tests
 pytest -v
 ```
 
-The same lint and tests run automatically on every pull request in GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+**4. Run and test the frontend locally.** With the backend running on `:8000`, install frontend packages and start the Vite dev server (which proxies `/api` to `:8000`):
+
+```bash
+cd src/frontend
+npm ci
+npm run dev                   # http://localhost:5173
+npm run lint
+npm run typecheck
+npm test -- --run
+npm run build
+```
+
+The same backend and frontend checks run automatically on every pull request in GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 **Short commands (optional).** With GNU make installed (Windows: `winget install ezwinports.make`), the steps above are shortened in the [`Makefile`](Makefile). Run `make` to see the list.
 
 | Command | Does |
 |---|---|
-| `make setup` | create `.venv` and install dependencies |
+| `make setup` | create `.venv` and install backend dependencies |
+| `make fe-install` | install frontend dependencies (`npm ci`) |
 | `make db` | start only PostgreSQL |
 | `make check` | ruff + migration check + pytest, as in CI |
+| `make fe-check` | frontend lint + typecheck + Vitest + production build |
 | `make run` | local Django server on http://localhost:8001 |
+| `make fe-dev` | local Vite dev server on http://localhost:5173 |
 | `make up` / `make down` | start / stop everything in Docker |
 
 To regenerate the diagram images (requires Docker):
@@ -176,12 +191,13 @@ docker run --rm -v "$PWD/diagrams:/data" plantuml/plantuml -tpng -o /data/png /d
 - `diagrams/`: PlantUML sources (`src/`) and images (`png/`)
 - `src/backend/`: Django project, requirements and Dockerfile
   - `config/`: settings and root URLs
-  - `apps/`: one Django app per domain: `core` (health), `accounts` (users, roles, auth API), `contributions` (sentences, tasks, contributions, versions), `glossary` (terms), `verification` (reviews, reviewer weight, quality settings)
+  - `apps/`: one Django app per domain: `core` (health), `accounts` (users, roles, auth API), `contributions` (sentences, tasks, contributions, versions), `glossary` (terms), `verification` (reviews, reviewer weight, quality settings), `exports` (CSV / JSON / manifest)
   - `common/`: shared code (role permissions, choices)
   - Rule: views stay thin; business logic goes into each app's `services/` (and `domain/` for pure logic such as the decision rule)
+- `src/frontend/`: Vite + React + TypeScript application (`app/`, `shared/`, `features/`)
 - `tests/backend/`: automated backend tests (pytest), grouped by app
-- `docker-compose.yml`: PostgreSQL and the backend for local development
-- `.github/workflows/ci.yml`: lint and tests on every pull request
+- `docker-compose.yml`: PostgreSQL, backend and frontend for local development
+- `.github/workflows/ci.yml`: backend and frontend lint and tests on every pull request
 - `config.example.env`: example settings with placeholder values
 
 ## Git rules
