@@ -1,4 +1,4 @@
-# Caddy gets a Let's Encrypt certificate for SITE_ADDRESS and redirects HTTP to HTTPS (NFR-03).
+# API only: Caddy gets a certificate for SITE_ADDRESS (api.tilqor.samatk.me) and redirects HTTP to HTTPS.
 {$SITE_ADDRESS} {
 	encode gzip
 	reverse_proxy backend:8000
