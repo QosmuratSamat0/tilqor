@@ -16,5 +16,6 @@ that supersedes the old one.
 | [0001](0001-technology-stack.md) | Django + DRF, PostgreSQL, REST API with a single-page frontend | Accepted | 2026-10-22 |
 | [0002](0002-app-layering.md) | Layers inside a Django app: domain, services, selectors, api | Accepted | 2026-10-31 |
 | [0003](0003-role-based-permissions.md) | The user role is the single source of Tilqor permissions | Accepted | 2026-10-31 |
-| [0004](0004-session-csrf-authentication.md) | Cookie session + CSRF authentication for the API | Accepted | 2026-10-29 |
+| [0004](0004-session-csrf-authentication.md) | Cookie session + CSRF authentication for the API | Accepted; amended by 0006 | 2026-10-29 |
 | [0005](0005-fr06-moved-to-til23.md) | FR-06 (contributor permission) is implemented in TIL-23, not TIL-22 | Accepted | 2026-11-02 |
+| [0006](0006-frontend-on-github-pages.md) | Frontend on GitHub Pages with a same-site API subdomain | Accepted | 2026-11-04 |

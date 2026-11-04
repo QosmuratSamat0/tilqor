@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../../shared/api/client";
+import { apiUrl } from "../../shared/api/apiUrl";
 import { queryKeys } from "../../shared/api/queryKeys";
 import {
   Button,
@@ -87,10 +88,10 @@ export function DictionaryListPage() {
           <p className={styles.subtitle}>{t("dictionary.subtitle")}</p>
         </div>
         <div className={styles.exports}>
-          <a href="/api/exports/dataset.csv" className={styles.exportLink}>
+          <a href={apiUrl("/api/exports/dataset.csv")} className={styles.exportLink}>
             {t("dictionary.exportCsv")}
           </a>
-          <a href="/api/exports/dataset.json" className={styles.exportLink}>
+          <a href={apiUrl("/api/exports/dataset.json")} className={styles.exportLink}>
             {t("dictionary.exportJson")}
           </a>
         </div>

@@ -5,11 +5,13 @@ describe("apiRequest client", () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
+    vi.stubEnv("VITE_API_BASE_URL", "");
     vi.stubGlobal("fetch", fetchMock);
     document.cookie = "csrftoken=test-csrf-token-123";
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
     fetchMock.mockReset();
     document.cookie = "csrftoken=; Max-Age=0";
@@ -29,7 +31,7 @@ describe("apiRequest client", () => {
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const headers = init.headers as Record<string, string>;
     expect(headers["X-CSRFToken"]).toBeUndefined();
-    expect(init.credentials).toBe("same-origin");
+    expect(init.credentials).toBe("include");
   });
 
   it.each(["POST", "PUT", "PATCH", "DELETE"] as const)(
@@ -46,9 +48,21 @@ describe("apiRequest client", () => {
       const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
       const headers = init.headers as Record<string, string>;
       expect(headers["X-CSRFToken"]).toBe("test-csrf-token-123");
-      expect(init.credentials).toBe("same-origin");
+      expect(init.credentials).toBe("include");
     }
   );
+
+  it("sends credentialed API requests and query parameters to the configured origin", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test/");
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    await apiRequest("/api/tasks/", { params: { domain: "it", page: 2 } });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/tasks/?domain=it&page=2",
+      expect.objectContaining({ credentials: "include" })
+    );
+  });
 
   it("parses FieldErrors responses into ApiError.fieldErrors", async () => {
     fetchMock.mockResolvedValueOnce(

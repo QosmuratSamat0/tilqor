@@ -1,4 +1,5 @@
 import type { components } from "./schema";
+import { apiUrl } from "./apiUrl";
 
 export type CurrentUser = components["schemas"]["CurrentUser"];
 export type RegisterRequest = components["schemas"]["RegisterRequest"];
@@ -158,9 +159,9 @@ export async function apiRequest<T>(
     }
   }
 
-  const response = await fetch(buildUrl(path, options.params), {
+  const response = await fetch(apiUrl(buildUrl(path, options.params)), {
     method,
-    credentials: "same-origin",
+    credentials: "include",
     headers,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     signal: options.signal,
