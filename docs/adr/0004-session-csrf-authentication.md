@@ -1,6 +1,6 @@
 # 0004. Cookie session + CSRF authentication for the API
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by [0006](0006-frontend-on-github-pages.md)
 - **Date:** 2026-10-29
 - **Source:** NFR-03; TIL-20 (PR #17), `REST_FRAMEWORK` and cookie settings in `config/settings.py`
 
