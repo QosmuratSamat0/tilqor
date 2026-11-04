@@ -6,6 +6,8 @@ Tilqor is a web platform where people translate Russian sentences into Kazakh an
 
 Diploma project, group SE-2430. *Tilqor is a working name.*
 
+Production addresses (after the [owner's deployment checklist](docs/deploy.md#owner-checklist)): frontend https://tilqor.samatk.me (GitHub Pages), API https://api.tilqor.samatk.me (EC2).
+
 - YouTrack project: https://qosmuratsamat.youtrack.cloud/projects/TIL
 - Prototype (Figma): https://www.figma.com/design/qIYMTuvz3jta6YBrgxWRDp/Untitled?node-id=0-1
 
