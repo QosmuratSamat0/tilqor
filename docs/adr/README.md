@@ -19,3 +19,4 @@ that supersedes the old one.
 | [0004](0004-session-csrf-authentication.md) | Cookie session + CSRF authentication for the API | Accepted; amended by 0006 | 2026-10-29 |
 | [0005](0005-fr06-moved-to-til23.md) | FR-06 (contributor permission) is implemented in TIL-23, not TIL-22 | Accepted | 2026-11-02 |
 | [0006](0006-frontend-on-github-pages.md) | Frontend on GitHub Pages with a same-site API subdomain | Accepted | 2026-11-04 |
+| [0007](0007-evaluation-by-simulation.md) | Reproducible simulated-vote evaluation with sequential replay and majority | Accepted | 2026-11-06 |
