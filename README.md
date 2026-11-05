@@ -84,7 +84,6 @@ Comparison of alternatives: [technology comparison](docs/tech-comparison.md).
 | [Requirements](docs/requirements.md) | Functional and non-functional requirements, priorities, acceptance criteria |
 | [Architecture](docs/architecture.md) | Components, data flow, traceability to requirements |
 | [Verification plan](docs/verification-plan.md) | Tests, metrics, measurement conditions, baseline |
-| [TIL-36 UI verification](docs/testing/til36-ui-fixes.md) | Local UI fixes, API changes, automated checks and keyboard walkthrough |
 | [Risks and milestones](docs/risks.md) | Risks, milestones, dependencies, responsibilities |
 | [Survey results](docs/survey/results.md) | 14 responses, verified findings and assumptions |
 | [Survey template](docs/survey/template.md) | Original questionnaire (TIL-2) |
