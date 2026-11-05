@@ -183,7 +183,11 @@ export function MyContributionsPage() {
                             <strong>{t("my.reasonsTitle")}</strong>
                             <ul className={styles.reasonsList}>
                               {ver.decision_reasons.map((reason, idx) => (
-                                <li key={idx}>{reason}</li>
+                                <li key={idx}>
+                                  {reason.code ? t(`review.reasonCode.${reason.code}`) : null}
+                                  {reason.code && reason.comment ? ": " : null}
+                                  {reason.comment}
+                                </li>
                               ))}
                             </ul>
                           </div>

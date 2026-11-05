@@ -43,8 +43,16 @@ class ReviewerProfileAdmin(AuditAdmin):
 
 @admin.register(Review)
 class ReviewAdmin(AuditAdmin):
-    list_display = ("id", "version", "reviewer", "decision", "weight_snapshot", "created_at")
-    list_filter = ("decision",)
+    list_display = (
+        "id",
+        "version",
+        "reviewer",
+        "decision",
+        "reason_code",
+        "weight_snapshot",
+        "created_at",
+    )
+    list_filter = ("decision", "reason_code")
     raw_id_fields = ("version", "reviewer")
 
 

@@ -69,7 +69,7 @@ describe("HomePage daily goal", () => {
             number: 1,
             text_kk: "Кешегі үлес",
             status: "needs_edit",
-            decision_reasons: ["Правка"],
+            decision_reasons: [{ code: "wrong_term", comment: "Правка" }],
             created_at: yesterdayIso,
           },
           {

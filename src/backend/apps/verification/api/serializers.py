@@ -1,27 +1,43 @@
 from rest_framework import serializers
 
 from apps.contributions.models import ContributionVersion
-from apps.verification.choices import DECISIONS_REQUIRING_REASON, Decision
+from apps.verification.choices import Decision, ReviewReason
+from apps.verification.domain.reasons import reason_error
 from apps.verification.models import Review
 
 
 class ReviewInputSerializer(serializers.Serializer):
     version_id = serializers.IntegerField(min_value=1)
     decision = serializers.ChoiceField(choices=Decision.choices)
+    reason_code = serializers.ChoiceField(
+        choices=ReviewReason.choices, required=False, allow_blank=True, default=""
+    )
     reason = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate(self, attrs):
-        if attrs["decision"] in DECISIONS_REQUIRING_REASON and not attrs["reason"]:
-            raise serializers.ValidationError(
-                {"reason": "A reason is required for reject and edit."}
-            )
+        error = reason_error(attrs["decision"], attrs["reason_code"], attrs["reason"])
+        if error:
+            field, code, message = error
+            raise serializers.ValidationError({field: serializers.ErrorDetail(message, code=code)})
         return attrs
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    reason_code = serializers.ChoiceField(
+        choices=ReviewReason.choices, allow_blank=True, read_only=True
+    )
+
     class Meta:
         model = Review
-        fields = ("id", "version_id", "decision", "reason", "weight_snapshot", "created_at")
+        fields = (
+            "id",
+            "version_id",
+            "decision",
+            "reason_code",
+            "reason",
+            "weight_snapshot",
+            "created_at",
+        )
         read_only_fields = fields
 
 

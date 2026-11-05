@@ -35,6 +35,7 @@ def test_allowed_roles_and_response_allowlist(api_client, reviewer_factory, vers
         "version_id",
         "decision",
         "reason",
+        "reason_code",
         "weight_snapshot",
         "created_at",
     }
@@ -101,7 +102,11 @@ def test_self_duplicate_and_invalid_votes(api_client, reviewer_factory, version)
 def test_sixth_vote_conflicts(api_client, reviewer_factory, version):
     for decision in ("accept", "reject", "edit", "accept", "reject"):
         submit_review(
-            reviewer=reviewer_factory(), version_id=version.pk, decision=decision, reason="x"
+            reason_code=("other" if decision in ("reject", "edit") else ""),
+            reviewer=reviewer_factory(),
+            version_id=version.pk,
+            decision=decision,
+            reason="x",
         )
     api_client.force_authenticate(reviewer_factory())
     response = api_client.post(ROOT, {"version_id": version.pk, "decision": "accept"})
@@ -134,13 +139,21 @@ def test_stats_use_only_own_finalized_counted_votes(api_client, reviewer_factory
     assert not ReviewerProfile.objects.exists()  # A read does not create a review profile.
     for decision in ("accept", "reject", "dont_know"):
         version = make_version()
-        submit_review(reviewer=reviewer, version_id=version.pk, decision=decision, reason="x")
+        submit_review(
+            reason_code=("other" if decision in ("reject", "edit") else ""),
+            reviewer=reviewer,
+            version_id=version.pk,
+            decision=decision,
+            reason="x",
+        )
         # A prior match raises this reviewer's weight to 1.05: two new accepts
         # then fall just below 0.66 against their rejection, so collect a third.
         for _ in range(2 if decision == "accept" else 3):
             submit_review(reviewer=reviewer_factory(), version_id=version.pk, decision="accept")
     pending = make_version()
-    submit_review(reviewer=reviewer, version_id=pending.pk, decision="reject", reason="x")
+    submit_review(
+        reason_code="other", reviewer=reviewer, version_id=pending.pk, decision="reject", reason="x"
+    )
     data = api_client.get(ROOT + "me/stats/").data
     assert data == {
         "weight": "0.95",

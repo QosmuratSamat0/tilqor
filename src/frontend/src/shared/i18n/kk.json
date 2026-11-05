@@ -115,10 +115,13 @@
     "submitTranslation": "",
     "submitting": "",
     "submittedSuccess": "",
+    "ownStatus": "",
+    "myTranslations": "",
     "warningsTitle": "",
     "otherVariantsTitle": "",
     "otherVariantsEmpty": "",
     "termVariantsTitle": "",
+    "termChoiceLabel": "",
     "termVariantsHint": "",
     "chooseVariantButton": "",
     "chosenVariantBadge": "",
@@ -126,10 +129,7 @@
     "termInputLabel": "",
     "termPlaceholder": "",
     "submitTermButton": "",
-    "variantAuthor": "",
-    "ownStatus": "",
-    "myTranslations": "",
-    "termChoiceLabel": ""
+    "variantAuthor": ""
   },
   "review": {
     "title": "",
@@ -159,6 +159,14 @@
     "decisionReject": "",
     "decisionDontKnow": "",
     "reasonLabel": "",
+    "commentHint": "",
+    "reasonCodeLabel": "",
+    "reasonCode": {
+      "wrong_term": "",
+      "russian_connector": "",
+      "grammar": "",
+      "other": ""
+    },
     "reasonPlaceholder": "",
     "reasonRequiredError": "",
     "submitReviewButton": "",

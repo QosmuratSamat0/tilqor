@@ -115,10 +115,13 @@
     "submitTranslation": "Отправить перевод",
     "submitting": "Отправка...",
     "submittedSuccess": "Ваш вариант успешно сохранён и отправлен на проверку.",
+    "ownStatus": "Статус вашего варианта:",
+    "myTranslations": "Мои переводы",
     "warningsTitle": "Обратите внимание на предупреждения проверки:",
     "otherVariantsTitle": "Варианты участников",
     "otherVariantsEmpty": "Пока нет других вариантов для этого задания.",
     "termVariantsTitle": "Доступные варианты термина на казахском",
+    "termChoiceLabel": "Ваш выбор термина",
     "termVariantsHint": "Выберите наиболее точный существующий вариант или предложите свой ниже.",
     "chooseVariantButton": "Выбрать этот вариант",
     "chosenVariantBadge": "Ваш выбор сохранён",
@@ -126,10 +129,7 @@
     "termInputLabel": "Новый вариант термина на казахском",
     "termPlaceholder": "Введите свой вариант термина...",
     "submitTermButton": "Предложить вариант",
-    "variantAuthor": "Автор: {{name}}",
-    "ownStatus": "Статус вашего варианта:",
-    "myTranslations": "Мои переводы",
-    "termChoiceLabel": "Ваш выбор термина"
+    "variantAuthor": "Автор: {{name}}"
   },
   "review": {
     "title": "Очередь проверки переводов и терминов",
@@ -158,7 +158,15 @@
     "decisionEdit": "Нужна правка",
     "decisionReject": "Отклонить",
     "decisionDontKnow": "Не знаю / Пропустить",
-    "reasonLabel": "Причина решения (обязательно для «Отклонить» и «Нужна правка»)",
+    "reasonLabel": "Комментарий",
+    "commentHint": "Обязателен для причины «Другое»; в остальных случаях необязателен.",
+    "reasonCodeLabel": "Причина решения",
+    "reasonCode": {
+      "wrong_term": "Неверный термин",
+      "russian_connector": "Русская связка",
+      "grammar": "Грамматика",
+      "other": "Другое"
+    },
     "reasonPlaceholder": "Укажите, что именно нужно исправить или почему вариант не подходит...",
     "reasonRequiredError": "Пожалуйста, укажите причину для отклонения или запроса правки.",
     "submitReviewButton": "Отправить решение",

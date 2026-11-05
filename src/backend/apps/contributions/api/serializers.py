@@ -1,7 +1,9 @@
 from django.core.exceptions import ObjectDoesNotExist
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.contributions.models import Contribution, ContributionVersion, Task, VariantPreference
+from apps.verification.choices import ReviewReason
 
 
 class TextInputSerializer(serializers.Serializer):
@@ -101,6 +103,11 @@ class PreferenceSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class DecisionReasonSerializer(serializers.Serializer):
+    code = serializers.ChoiceField(choices=ReviewReason.choices, allow_null=True)
+    comment = serializers.CharField(allow_blank=True)
+
+
 class OwnVersionSerializer(serializers.ModelSerializer):
     decision_reasons = serializers.SerializerMethodField()
 
@@ -109,28 +116,31 @@ class OwnVersionSerializer(serializers.ModelSerializer):
         fields = ("id", "number", "text_kk", "status", "decision_reasons", "created_at")
         read_only_fields = fields
 
-    def get_decision_reasons(self, version: ContributionVersion) -> list[str]:
+    @extend_schema_field(DecisionReasonSerializer(many=True))
+    def get_decision_reasons(self, version: ContributionVersion) -> list[dict]:
         try:
             finalization = version.finalization
         except ObjectDoesNotExist:
             return []
         if finalization is None:
             return []
-        reasons: list[str] = []
-        seen: set[str] = set()
+        reasons: list[dict] = []
+        seen: set[tuple] = set()
         reviews = (
             version.reviews.all()
             if "reviews" in getattr(version, "_prefetched_objects_cache", {})
             else version.reviews.order_by("created_at", "pk")
         )
-        candidates = [finalization.reason]
+        candidates = [(None, finalization.reason)] if finalization.reason else []
         candidates.extend(
-            review.reason for review in reviews if review.decision == finalization.decision
+            (review.reason_code or None, review.reason)
+            for review in reviews
+            if review.decision == finalization.decision
         )
-        for reason in candidates:
-            if reason and reason not in seen:
-                seen.add(reason)
-                reasons.append(reason)
+        for code, comment in candidates:
+            if (code or comment) and (code, comment) not in seen:
+                seen.add((code, comment))
+                reasons.append({"code": code, "comment": comment})
         return reasons
 
 

@@ -141,18 +141,13 @@ def test_own_submissions_show_all_statuses_and_matching_reasons_without_reviewer
     author = user_factory(username="author_one")
     other_user = user_factory(username="author_two")
     moderator = user_factory(username="mod_secret", role="moderator")
-    reviewers = [
-        user_factory(username=f"rev_secret_{i}", role="reviewer") for i in range(5)
-    ]
+    reviewers = [user_factory(username=f"rev_secret_{i}", role="reviewer") for i in range(5)]
     settings = QualitySettings.objects.get(is_active=True)
 
-    submitted_v = add_version(
-        make_translation_task(), text_kk="Жіберілген мәтін", author=author
-    )
-    in_review_v = add_version(
-        make_translation_task(), text_kk="Тексерілудегі мәтін", author=author
-    )
+    submitted_v = add_version(make_translation_task(), text_kk="Жіберілген мәтін", author=author)
+    in_review_v = add_version(make_translation_task(), text_kk="Тексерілудегі мәтін", author=author)
     submit_review(
+        reason_code="other",
         reviewer=reviewers[0],
         version_id=in_review_v.pk,
         decision="reject",
@@ -176,18 +171,21 @@ def test_own_submissions_show_all_statuses_and_matching_reasons_without_reviewer
         make_translation_task(), text_kk="Автоматты қабылданбаған мәтін", author=author
     )
     submit_review(
+        reason_code="other",
         reviewer=reviewers[0],
         version_id=auto_rejected_v.pk,
         decision="edit",
         reason="Бұл edit себебі көрінбеуі тиіс.",
     )
     submit_review(
+        reason_code="other",
         reviewer=reviewers[1],
         version_id=auto_rejected_v.pk,
         decision="reject",
         reason="Сөз тәртібі қате.",
     )
     submit_review(
+        reason_code="other",
         reviewer=reviewers[2],
         version_id=auto_rejected_v.pk,
         decision="reject",
@@ -204,6 +202,7 @@ def test_own_submissions_show_all_statuses_and_matching_reasons_without_reviewer
         strict=True,
     ):
         submit_review(
+            reason_code=("other" if decision in ("reject", "edit") else ""),
             reviewer=reviewer,
             version_id=mod_needs_edit_v.pk,
             decision=decision,
@@ -230,13 +229,13 @@ def test_own_submissions_show_all_statuses_and_matching_reasons_without_reviewer
     assert by_status["in_review"]["decision_reasons"] == []
     assert by_status["accepted"]["decision_reasons"] == []
     assert by_status["rejected"]["decision_reasons"] == [
-        "Сөз тәртібі қате.",
-        "Мағынасы бұрмаланған.",
+        {"code": "other", "comment": "Сөз тәртібі қате."},
+        {"code": "other", "comment": "Мағынасы бұрмаланған."},
     ]
     assert by_status["needs_edit"]["decision_reasons"] == [
-        "Модератор: терминді нақтылаңыз.",
-        "Жалғауын түзету керек.",
-        "Стилін жөндеу қажет.",
+        {"code": None, "comment": "Модератор: терминді нақтылаңыз."},
+        {"code": "other", "comment": "Жалғауын түзету керек."},
+        {"code": "other", "comment": "Стилін жөндеу қажет."},
     ]
 
     raw_json = response.content.decode("utf-8")
@@ -292,6 +291,7 @@ def test_own_submissions_prefetch_avoids_n_plus_one_queries(
         )
         for rev_idx, reviewer in enumerate(reviewers):
             submit_review(
+                reason_code="other",
                 reviewer=reviewer,
                 version_id=v2.pk,
                 decision="reject",
@@ -319,7 +319,13 @@ def test_new_version_after_needs_edit_preserves_history_and_enforces_rules(
     for reviewer, decision in zip(
         reviewers, ["accept", "reject", "edit", "accept", "reject"], strict=True
     ):
-        submit_review(reviewer=reviewer, version_id=v1.pk, decision=decision, reason="Себеп")
+        submit_review(
+            reason_code=("other" if decision in ("reject", "edit") else ""),
+            reviewer=reviewer,
+            version_id=v1.pk,
+            decision=decision,
+            reason="Себеп",
+        )
     resolve_version(
         moderator=moderator,
         version_id=v1.pk,
@@ -357,7 +363,14 @@ def test_new_version_after_needs_edit_preserves_history_and_enforces_rules(
     me_resp = api_client.get(f"{CONTRIBUTIONS_URL}me/")
     versions_data = me_resp.data[0]["versions"]
     assert [(v["number"], v["status"], v["decision_reasons"]) for v in versions_data] == [
-        (1, "needs_edit", ["Терминді нақтылау керек.", "Себеп"]),
+        (
+            1,
+            "needs_edit",
+            [
+                {"code": None, "comment": "Терминді нақтылау керек."},
+                {"code": "other", "comment": "Себеп"},
+            ],
+        ),
         (2, "submitted", []),
     ]
 

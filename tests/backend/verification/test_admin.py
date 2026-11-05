@@ -23,7 +23,11 @@ def admin_request(user, payload=None):
 def test_admin_resolution_requires_reason_and_records_actor(version, reviewer_factory):
     for decision in ("accept", "reject", "edit", "accept", "reject"):
         submit_review(
-            reviewer=reviewer_factory(), version_id=version.pk, decision=decision, reason="x"
+            reason_code=("other" if decision in ("reject", "edit") else ""),
+            reviewer=reviewer_factory(),
+            version_id=version.pk,
+            decision=decision,
+            reason="x",
         )
     moderator = reviewer_factory(role="moderator", is_staff=True, is_superuser=True)
     modeladmin = admin.site._registry[ContributionVersion]
