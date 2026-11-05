@@ -364,14 +364,6 @@ export interface components {
     schemas: {
         /** @enum {unknown} */
         BlankEnum: "";
-        /**
-         * @description * `wrong_term` - Wrong term
-         *     * `russian_connector` - Russian connector
-         *     * `grammar` - Grammar
-         *     * `other` - Other
-         * @enum {string}
-         */
-        CodeEnum: "wrong_term" | "russian_connector" | "grammar" | "other";
         ConnectorHint: {
             readonly id: number;
             readonly text_ru: string;
@@ -421,7 +413,7 @@ export interface components {
          */
         DecisionEnum: "accept" | "reject" | "edit" | "dont_know";
         DecisionReason: {
-            code: (components["schemas"]["CodeEnum"] | components["schemas"]["NullEnum"]) | null;
+            code: (components["schemas"]["ReviewReasonEnum"] | components["schemas"]["NullEnum"]) | null;
             comment: string;
         };
         /**
@@ -595,14 +587,6 @@ export interface components {
             readonly text_ru: string;
             readonly definition: string;
         };
-        /**
-         * @description * `wrong_term` - Wrong term
-         *     * `russian_connector` - Russian connector
-         *     * `grammar` - Grammar
-         *     * `other` - Other
-         * @enum {string}
-         */
-        ReasonCodeEnum: "wrong_term" | "russian_connector" | "grammar" | "other";
         RecommendedVariant: {
             readonly id: number;
             readonly text_kk: string;
@@ -621,7 +605,7 @@ export interface components {
             readonly id: number;
             readonly version_id: number;
             readonly decision: components["schemas"]["DecisionEnum"];
-            readonly reason_code: components["schemas"]["ReasonCodeEnum"] | components["schemas"]["BlankEnum"];
+            readonly reason_code: components["schemas"]["ReviewReasonEnum"] | components["schemas"]["BlankEnum"];
             readonly reason: string;
             /** Format: decimal */
             readonly weight_snapshot: string;
@@ -632,10 +616,18 @@ export interface components {
             version_id: number;
             decision: components["schemas"]["DecisionEnum"];
             /** @default  */
-            reason_code: components["schemas"]["ReasonCodeEnum"] | components["schemas"]["BlankEnum"];
+            reason_code: components["schemas"]["ReviewReasonEnum"] | components["schemas"]["BlankEnum"];
             /** @default  */
             reason: string;
         };
+        /**
+         * @description * `wrong_term` - Wrong term
+         *     * `russian_connector` - Russian connector
+         *     * `grammar` - Grammar
+         *     * `other` - Other
+         * @enum {string}
+         */
+        ReviewReasonEnum: "wrong_term" | "russian_connector" | "grammar" | "other";
         /**
          * @description * `participant` - Participant
          *     * `reviewer` - Reviewer

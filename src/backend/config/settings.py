@@ -150,6 +150,8 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
     "COMPONENT_SPLIT_REQUEST": True,
+    # One schema name for the review reason codes used by reviews and decision_reasons (TIL-36).
+    "ENUM_NAME_OVERRIDES": {"ReviewReasonEnum": "apps.verification.choices.ReviewReason"},
 }
 
 # Session cookies are not readable from JavaScript (NFR-03).
