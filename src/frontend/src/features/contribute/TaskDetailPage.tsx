@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -6,8 +6,10 @@ import {
   api,
   ApiError,
   type FieldErrors,
+  type TaskDetail,
 } from "../../shared/api/client";
 import { queryKeys } from "../../shared/api/queryKeys";
+import { errorFeedback, warningText } from "../../shared/i18n/feedback";
 import {
   Button,
   ErrorMessage,
@@ -18,13 +20,17 @@ import styles from "./ContributePages.module.css";
 
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
+  return <TaskDetailContent key={id} id={id} />;
+}
+
+function TaskDetailContent({ id }: { id: string | undefined }) {
   const taskId = Number(id);
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const [textKk, setTextKk] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [hasSubmittedOwn, setHasSubmittedOwn] = useState(false);
+  const [submittedOwn, setSubmittedOwn] = useState<TaskDetail["own_contribution"]>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -32,6 +38,8 @@ export function TaskDetailPage() {
   const [preferenceSubmittingId, setPreferenceSubmittingId] = useState<
     number | null
   >(null);
+  const preferenceQueue = useRef(Promise.resolve());
+  const preferenceRequest = useRef(0);
 
   const {
     data: task,
@@ -55,8 +63,16 @@ export function TaskDetailPage() {
     try {
       const response = await api.tasks.submitContribution(taskId, textKk);
       const collectedWarnings = Object.values(response.warnings ?? {}).flat();
-      setWarnings(collectedWarnings);
-      setHasSubmittedOwn(true);
+      setWarnings(collectedWarnings.map((warning) => warningText(warning, t)));
+      const own = {
+        id: response.id,
+        status: response.version.status,
+        latest_version_number: response.version.number,
+      };
+      setSubmittedOwn(own);
+      queryClient.setQueryData<TaskDetail>(queryKeys.tasks.detail(taskId), (previous) =>
+        previous ? { ...previous, own_contribution: own } : previous
+      );
       setTextKk("");
       await queryClient.invalidateQueries({
         queryKey: queryKeys.tasks.detail(taskId),
@@ -66,12 +82,11 @@ export function TaskDetailPage() {
       });
     } catch (err) {
       if (err instanceof ApiError) {
-        setFieldErrors(err.fieldErrors);
-        if (err.detail) {
-          setDetailError(err.detail);
-        } else if (!err.hasFieldErrors) {
-          setDetailError(err.message);
-        }
+        const feedback = errorFeedback(err, t);
+        setFieldErrors(feedback.fields);
+        if (feedback.detail || !Object.keys(feedback.fields).some(
+          (field) => field === "text_kk" || field === "task"
+        )) setDetailError(feedback.message);
       } else {
         setDetailError(t("app.errorGeneric"));
       }
@@ -81,23 +96,24 @@ export function TaskDetailPage() {
   }
 
   async function handleChooseVariant(versionId: number) {
+    const request = ++preferenceRequest.current;
     setPreferenceSubmittingId(versionId);
     setDetailError(null);
+    // Keep native radio focus while serializing writes, including rapid arrow-key changes.
+    const save = preferenceQueue.current.then(() => api.tasks.setPreference(taskId, versionId));
+    preferenceQueue.current = save.then(() => undefined, () => undefined);
     try {
-      const pref = await api.tasks.setPreference(taskId, versionId);
-      setChosenVersionId(pref.version_id);
+      const pref = await save;
+      if (request === preferenceRequest.current) setChosenVersionId(pref.version_id);
     } catch (err) {
+      if (request !== preferenceRequest.current) return;
       if (err instanceof ApiError) {
-        const msg =
-          err.detail ||
-          Object.values(err.fieldErrors).flat()[0] ||
-          err.message;
-        setDetailError(msg);
+        setDetailError(errorFeedback(err, t).message);
       } else {
         setDetailError(t("app.errorGeneric"));
       }
     } finally {
-      setPreferenceSubmittingId(null);
+      if (request === preferenceRequest.current) setPreferenceSubmittingId(null);
     }
   }
 
@@ -109,7 +125,7 @@ export function TaskDetailPage() {
     return (
       <div>
         <ErrorMessage>
-          {error instanceof Error ? error.message : t("app.errorGeneric")}
+          {error instanceof ApiError ? errorFeedback(error, t).message : t("app.errorGeneric")}
         </ErrorMessage>
         <Button variant="secondary" onClick={() => void refetch()}>
           {t("app.retry")}
@@ -119,6 +135,8 @@ export function TaskDetailPage() {
   }
 
   const isTranslation = task.type === "translation";
+  const ownContribution = task.own_contribution ?? submittedOwn;
+  const hasSubmittedOwn = ownContribution != null;
   const showTranslationVariants =
     isTranslation && (hasSubmittedOwn || task.variants.length > 0);
 
@@ -155,10 +173,17 @@ export function TaskDetailPage() {
 
         {detailError ? <ErrorMessage>{detailError}</ErrorMessage> : null}
 
-        {hasSubmittedOwn ? (
+        {submittedOwn ? (
           <div className={styles.successBox} role="status">
             {t("contribute.submittedSuccess")}
           </div>
+        ) : null}
+
+        {ownContribution ? (
+          <p role="status">
+            {t("contribute.ownStatus")} <StatusBadge status={ownContribution.status} />{" "}
+            <Link to="/my">{t("contribute.myTranslations")}</Link>
+          </p>
         ) : null}
 
         {warnings.length > 0 ? (
@@ -180,7 +205,7 @@ export function TaskDetailPage() {
               </p>
             ) : null}
 
-            <form
+            {!hasSubmittedOwn ? <form
               onSubmit={(e) => void handleContributionSubmit(e)}
               noValidate
             >
@@ -199,7 +224,7 @@ export function TaskDetailPage() {
                   ? t("contribute.submitting")
                   : t("contribute.submitTranslation")}
               </Button>
-            </form>
+            </form> : null}
           </>
         ) : null}
       </section>
@@ -247,7 +272,9 @@ export function TaskDetailPage() {
             {task.variants.length === 0 ? (
               <p>{t("contribute.otherVariantsEmpty")}</p>
             ) : (
-              <ul className={styles.variantsList}>
+              <fieldset className={styles.termFieldset} aria-busy={preferenceSubmittingId !== null}>
+                <legend>{t("contribute.termChoiceLabel")}</legend>
+                <ul className={styles.variantsList}>
                 {task.variants.map((variant) => {
                   const isChosen = chosenVersionId === variant.id;
                   return (
@@ -258,9 +285,9 @@ export function TaskDetailPage() {
                       }`.trim()}
                     >
                       <div>
-                        <div className={styles.variantText}>
+                        <label htmlFor={`term-variant-${variant.id}`} className={styles.variantText}>
                           {variant.text_kk}
-                        </div>
+                        </label>
                         <div className={styles.variantMeta}>
                           <StatusBadge status={variant.status} />
                           <span>
@@ -271,25 +298,25 @@ export function TaskDetailPage() {
                         </div>
                       </div>
                       <div>
-                        <Button
-                          variant={isChosen ? "primary" : "secondary"}
-                          size="small"
-                          disabled={preferenceSubmittingId === variant.id}
-                          onClick={() => void handleChooseVariant(variant.id)}
-                        >
-                          {isChosen
-                            ? t("contribute.chosenVariantBadge")
-                            : t("contribute.chooseVariantButton")}
-                        </Button>
+                        <input
+                          id={`term-variant-${variant.id}`}
+                          type="radio"
+                          name="term_variant"
+                          value={variant.id}
+                          checked={isChosen}
+                          onChange={() => void handleChooseVariant(variant.id)}
+                        />
+                        {isChosen ? <span role="status">{t("contribute.chosenVariantBadge")}</span> : null}
                       </div>
                     </li>
                   );
                 })}
-              </ul>
+                </ul>
+              </fieldset>
             )}
           </section>
 
-          <section className={styles.detailCard}>
+          {!hasSubmittedOwn ? <section className={styles.detailCard}>
             <h2>{t("contribute.suggestOwnTermTitle")}</h2>
             <form
               onSubmit={(e) => void handleContributionSubmit(e)}
@@ -310,7 +337,7 @@ export function TaskDetailPage() {
                   : t("contribute.submitTermButton")}
               </Button>
             </form>
-          </section>
+          </section> : null}
         </>
       ) : null}
     </div>

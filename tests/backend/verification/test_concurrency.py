@@ -26,7 +26,11 @@ def simultaneous(requests):
             barrier.wait(timeout=15)
             try:
                 return submit_review(
-                    reviewer=user, version_id=version_id, decision=decision, reason="x"
+                    reason_code=("other" if decision in ("reject", "edit") else ""),
+                    reviewer=user,
+                    version_id=version_id,
+                    decision=decision,
+                    reason="x",
                 ).pk
             except ReviewConflict:
                 return None

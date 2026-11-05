@@ -1,7 +1,9 @@
 from django.core.exceptions import ObjectDoesNotExist
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.contributions.models import Contribution, ContributionVersion, Task, VariantPreference
+from apps.verification.choices import ReviewReason
 
 
 class TextInputSerializer(serializers.Serializer):
@@ -44,11 +46,18 @@ class VariantSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class OwnContributionSummarySerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    status = serializers.ChoiceField(choices=ContributionVersion.Status.choices)
+    latest_version_number = serializers.IntegerField()
+
+
 class TaskDetailSerializer(TaskSerializer):
     variants = VariantSerializer(source="visible_variants", many=True, read_only=True)
+    own_contribution = OwnContributionSummarySerializer(read_only=True, allow_null=True)
 
     class Meta(TaskSerializer.Meta):
-        fields = (*TaskSerializer.Meta.fields, "variants")
+        fields = (*TaskSerializer.Meta.fields, "variants", "own_contribution")
         read_only_fields = fields
 
 
@@ -59,13 +68,19 @@ class VersionSummarySerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class WarningSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    params = serializers.DictField(child=serializers.JSONField())
+    message = serializers.CharField()
+
+
 class ContributionSubmissionSerializer(serializers.Serializer):
     id = serializers.IntegerField(source="contribution.id", read_only=True)
     task_id = serializers.IntegerField(source="contribution.task_id", read_only=True)
     created_at = serializers.DateTimeField(source="contribution.created_at", read_only=True)
     version = VersionSummarySerializer(read_only=True)
     warnings = serializers.DictField(
-        child=serializers.ListField(child=serializers.CharField()), read_only=True
+        child=serializers.ListField(child=WarningSerializer()), read_only=True
     )
 
 
@@ -77,7 +92,7 @@ class VersionSubmissionSerializer(serializers.Serializer):
     status = serializers.CharField(source="version.status", read_only=True)
     created_at = serializers.DateTimeField(source="version.created_at", read_only=True)
     warnings = serializers.DictField(
-        child=serializers.ListField(child=serializers.CharField()), read_only=True
+        child=serializers.ListField(child=WarningSerializer()), read_only=True
     )
 
 
@@ -88,6 +103,11 @@ class PreferenceSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class DecisionReasonSerializer(serializers.Serializer):
+    code = serializers.ChoiceField(choices=ReviewReason.choices, allow_null=True)
+    comment = serializers.CharField(allow_blank=True)
+
+
 class OwnVersionSerializer(serializers.ModelSerializer):
     decision_reasons = serializers.SerializerMethodField()
 
@@ -96,28 +116,31 @@ class OwnVersionSerializer(serializers.ModelSerializer):
         fields = ("id", "number", "text_kk", "status", "decision_reasons", "created_at")
         read_only_fields = fields
 
-    def get_decision_reasons(self, version: ContributionVersion) -> list[str]:
+    @extend_schema_field(DecisionReasonSerializer(many=True))
+    def get_decision_reasons(self, version: ContributionVersion) -> list[dict]:
         try:
             finalization = version.finalization
         except ObjectDoesNotExist:
             return []
         if finalization is None:
             return []
-        reasons: list[str] = []
-        seen: set[str] = set()
+        reasons: list[dict] = []
+        seen: set[tuple] = set()
         reviews = (
             version.reviews.all()
             if "reviews" in getattr(version, "_prefetched_objects_cache", {})
             else version.reviews.order_by("created_at", "pk")
         )
-        candidates = [finalization.reason]
+        candidates = [(None, finalization.reason)] if finalization.reason else []
         candidates.extend(
-            review.reason for review in reviews if review.decision == finalization.decision
+            (review.reason_code or None, review.reason)
+            for review in reviews
+            if review.decision == finalization.decision
         )
-        for reason in candidates:
-            if reason and reason not in seen:
-                seen.add(reason)
-                reasons.append(reason)
+        for code, comment in candidates:
+            if (code or comment) and (code, comment) not in seen:
+                seen.add((code, comment))
+                reasons.append({"code": code, "comment": comment})
         return reasons
 
 

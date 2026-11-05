@@ -31,6 +31,8 @@ class DetailErrorSerializer(serializers.Serializer):
     """Error response with a single top-level `detail` message."""
 
     detail = serializers.CharField()
+    code = serializers.CharField(required=False)
+    params = serializers.DictField(child=serializers.JSONField(), required=False)
 
 
 @extend_schema_serializer(
@@ -62,10 +64,19 @@ class FieldErrorsSerializerExtension(OpenApiSerializerExtension):
     def map_serializer(self, auto_schema, direction):
         return {
             "type": "object",
-            "description": "Mapping of field names to lists of error messages.",
+            "description": "Field messages plus stable codes and interpolation parameters.",
+            "properties": {
+                "codes": {
+                    "type": "object",
+                    "additionalProperties": {"type": "array", "items": {"type": "string"}},
+                },
+                "params": {"type": "object", "additionalProperties": {"type": "object"}},
+            },
             "additionalProperties": {
-                "type": "array",
-                "items": {"type": "string"},
+                "oneOf": [
+                    {"type": "array", "items": {"type": "string"}},
+                    {"type": "object", "additionalProperties": {}},
+                ],
             },
             "example": {"text_kk": ["Text cannot be empty."]},
         }

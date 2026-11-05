@@ -362,6 +362,8 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {unknown} */
+        BlankEnum: "";
         ConnectorHint: {
             readonly id: number;
             readonly text_ru: string;
@@ -378,7 +380,7 @@ export interface components {
             readonly created_at: string;
             readonly version: components["schemas"]["VersionSummary"];
             readonly warnings: {
-                [key: string]: string[];
+                [key: string]: components["schemas"]["Warning"][];
             };
         };
         CurrentUser: {
@@ -410,6 +412,10 @@ export interface components {
          * @enum {string}
          */
         DecisionEnum: "accept" | "reject" | "edit" | "dont_know";
+        DecisionReason: {
+            code: (components["schemas"]["ReviewReasonEnum"] | components["schemas"]["NullEnum"]) | null;
+            comment: string;
+        };
         /**
          * @description Error response with a single top-level `detail` message.
          * @example {
@@ -418,6 +424,10 @@ export interface components {
          */
         DetailError: {
             detail: string;
+            code?: string;
+            params?: {
+                [key: string]: unknown;
+            };
         };
         DictionaryTerm: {
             readonly id: number;
@@ -477,7 +487,7 @@ export interface components {
             readonly accepted_at: string;
         };
         /**
-         * @description Mapping of field names to lists of error messages.
+         * @description Field messages plus stable codes and interpolation parameters.
          * @example {
          *       "text_kk": [
          *         "Text cannot be empty."
@@ -485,7 +495,16 @@ export interface components {
          *     }
          */
         FieldErrors: {
-            [key: string]: string[];
+            codes?: {
+                [key: string]: string[];
+            };
+            params?: {
+                [key: string]: Record<string, never>;
+            };
+        } & {
+            [key: string]: string[] | {
+                [key: string]: unknown;
+            };
         };
         HealthResponse: {
             status: string;
@@ -501,6 +520,8 @@ export interface components {
             readonly source_url: string;
             readonly count: number;
         };
+        /** @enum {unknown} */
+        NullEnum: null;
         OwnContribution: {
             readonly id: number;
             readonly task_id: number;
@@ -511,12 +532,17 @@ export interface components {
             readonly created_at: string;
             readonly versions: components["schemas"]["OwnVersion"][];
         };
+        OwnContributionSummary: {
+            id: number;
+            status: components["schemas"]["StatusEnum"];
+            latest_version_number: number;
+        };
         OwnVersion: {
             readonly id: number;
             readonly number: number;
             readonly text_kk: string;
             readonly status: components["schemas"]["StatusEnum"];
-            readonly decision_reasons: string[];
+            readonly decision_reasons: components["schemas"]["DecisionReason"][];
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -579,6 +605,7 @@ export interface components {
             readonly id: number;
             readonly version_id: number;
             readonly decision: components["schemas"]["DecisionEnum"];
+            readonly reason_code: components["schemas"]["ReviewReasonEnum"] | components["schemas"]["BlankEnum"];
             readonly reason: string;
             /** Format: decimal */
             readonly weight_snapshot: string;
@@ -589,8 +616,18 @@ export interface components {
             version_id: number;
             decision: components["schemas"]["DecisionEnum"];
             /** @default  */
+            reason_code: components["schemas"]["ReviewReasonEnum"] | components["schemas"]["BlankEnum"];
+            /** @default  */
             reason: string;
         };
+        /**
+         * @description * `wrong_term` - Wrong term
+         *     * `russian_connector` - Russian connector
+         *     * `grammar` - Grammar
+         *     * `other` - Other
+         * @enum {string}
+         */
+        ReviewReasonEnum: "wrong_term" | "russian_connector" | "grammar" | "other";
         /**
          * @description * `participant` - Participant
          *     * `reviewer` - Reviewer
@@ -634,6 +671,7 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
             readonly variants: components["schemas"]["Variant"][];
+            readonly own_contribution: components["schemas"]["OwnContributionSummary"] | null;
         };
         TextInputRequest: {
             text_kk: string;
@@ -670,7 +708,7 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
             readonly warnings: {
-                [key: string]: string[];
+                [key: string]: components["schemas"]["Warning"][];
             };
         };
         VersionSummary: {
@@ -680,6 +718,13 @@ export interface components {
             readonly status: components["schemas"]["StatusEnum"];
             /** Format: date-time */
             readonly created_at: string;
+        };
+        Warning: {
+            code: string;
+            params: {
+                [key: string]: unknown;
+            };
+            message: string;
         };
         WordOfTheDay: {
             readonly id: number;

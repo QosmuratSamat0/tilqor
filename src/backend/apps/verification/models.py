@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import F, Q
 
-from apps.verification.choices import Decision
+from apps.verification.choices import Decision, ReviewReason
 
 WEIGHT_MIN = Decimal("0.50")
 WEIGHT_MAX = Decimal("2.00")
@@ -129,6 +129,7 @@ class Review(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="reviews"
     )
     decision = models.CharField(max_length=20, choices=Decision.choices)
+    reason_code = models.CharField(max_length=20, choices=ReviewReason.choices, blank=True)
     reason = models.TextField(blank=True)
     weight_snapshot = models.DecimalField(max_digits=3, decimal_places=2)
     quality_settings = models.ForeignKey(
@@ -146,8 +147,15 @@ class Review(models.Model):
                 fields=["version", "reviewer"], name="one_review_per_reviewer_per_version"
             ),
             models.CheckConstraint(
-                condition=~Q(decision__in=["reject", "edit"]) | ~Q(reason=""),
-                name="reason_required_for_reject_and_edit",
+                condition=(
+                    Q(decision__in=["reject", "edit"], reason_code__in=ReviewReason.values)
+                    | Q(decision__in=["accept", "dont_know"], reason_code="")
+                ),
+                name="review_reason_code_matches_decision",
+            ),
+            models.CheckConstraint(
+                condition=~Q(reason_code="other") | Q(reason__regex=r"\S"),
+                name="review_other_requires_comment",
             ),
         ]
 

@@ -9,6 +9,7 @@ import {
   type OwnContribution,
 } from "../../shared/api/client";
 import { queryKeys } from "../../shared/api/queryKeys";
+import { errorFeedback, warningText } from "../../shared/i18n/feedback";
 import {
   Button,
   EmptyState,
@@ -43,19 +44,18 @@ function NewVersionForm({ contribution }: NewVersionFormProps) {
         contribution.id,
         textKk
       );
-      setWarnings(Object.values(res.warnings ?? {}).flat());
+      setWarnings(Object.values(res.warnings ?? {}).flat().map((warning) => warningText(warning, t)));
       setTextKk("");
       await queryClient.invalidateQueries({
         queryKey: queryKeys.contributions.me,
       });
     } catch (err) {
       if (err instanceof ApiError) {
-        setFieldErrors(err.fieldErrors);
-        if (err.detail) {
-          setDetailError(err.detail);
-        } else if (!err.hasFieldErrors) {
-          setDetailError(err.message);
-        }
+        const feedback = errorFeedback(err, t);
+        setFieldErrors(feedback.fields);
+        if (feedback.detail || !Object.keys(feedback.fields).some(
+          (field) => field === "text_kk" || field === "contribution"
+        )) setDetailError(feedback.message);
       } else {
         setDetailError(t("app.errorGeneric"));
       }
@@ -117,7 +117,7 @@ export function MyContributionsPage() {
       {isError ? (
         <div>
           <ErrorMessage>
-            {error instanceof Error ? error.message : t("app.errorGeneric")}
+            {error instanceof ApiError ? errorFeedback(error, t).message : t("app.errorGeneric")}
           </ErrorMessage>
           <Button variant="secondary" onClick={() => void refetch()}>
             {t("app.retry")}
@@ -183,7 +183,11 @@ export function MyContributionsPage() {
                             <strong>{t("my.reasonsTitle")}</strong>
                             <ul className={styles.reasonsList}>
                               {ver.decision_reasons.map((reason, idx) => (
-                                <li key={idx}>{reason}</li>
+                                <li key={idx}>
+                                  {reason.code ? t(`review.reasonCode.${reason.code}`) : null}
+                                  {reason.code && reason.comment ? ": " : null}
+                                  {reason.comment}
+                                </li>
                               ))}
                             </ul>
                           </div>

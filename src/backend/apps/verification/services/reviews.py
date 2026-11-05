@@ -3,8 +3,9 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.contributions.models import ContributionVersion
-from apps.verification.choices import COUNTED_DECISIONS, DECISIONS_REQUIRING_REASON, Decision
+from apps.verification.choices import COUNTED_DECISIONS, Decision
 from apps.verification.domain.decisions import STATUSES, Rules, Vote, evaluate
+from apps.verification.domain.reasons import reason_error
 from apps.verification.domain.reputation import updated_weight
 from apps.verification.models import Finalization, QualitySettings, Review, ReviewerProfile
 
@@ -21,7 +22,7 @@ def _locked_version(version_id):
             .get(pk=version_id)
         )
     except ContributionVersion.DoesNotExist as exc:
-        raise ReviewError("Unknown version.") from exc
+        raise ReviewError("Unknown version.", code="not_found") from exc
 
 
 def _settings(version):
@@ -31,7 +32,7 @@ def _settings(version):
     try:
         return QualitySettings.objects.select_for_update().get(is_active=True)
     except QualitySettings.DoesNotExist as exc:
-        raise ReviewConflict("No active quality settings.") from exc
+        raise ReviewConflict("No active quality settings.", code="settings_unavailable") from exc
 
 
 def _lock_reviewers(version, extra_ids=()):
@@ -103,21 +104,23 @@ def _evaluate(version, settings):
 
 
 @transaction.atomic
-def submit_review(*, reviewer, version_id, decision, reason=""):
+def submit_review(*, reviewer, version_id, decision, reason_code="", reason=""):
     version = _locked_version(version_id)
     users = _lock_reviewers(version, [reviewer.pk])
     reviewer = next(user for user in users if user.pk == reviewer.pk)
     if not reviewer.is_active or not reviewer.is_reviewer:
-        raise ReviewForbidden("Reviewer access is required.")
+        raise ReviewForbidden("Reviewer access is required.", code="reviewer_required")
     if version.contribution.author_id == reviewer.pk:
-        raise ReviewForbidden("You cannot review your own contribution.")
+        raise ReviewForbidden("You cannot review your own contribution.", code="self_review")
     if decision not in Decision.values:
-        raise ReviewError("Invalid decision.")
+        raise ReviewError("Invalid decision.", code="invalid_choice")
     reason = reason.strip()
-    if decision in DECISIONS_REQUIRING_REASON and not reason:
-        raise ReviewError("A reason is required for reject and edit.")
+    error = reason_error(decision, reason_code, reason)
+    if error:
+        field, code, message = error
+        raise ReviewError(message, field=field, code=code)
     if version.reviews.filter(reviewer=reviewer).exists():
-        raise ReviewConflict("You have already reviewed this version.")
+        raise ReviewConflict("You have already reviewed this version.", code="already_reviewed")
     settings = _settings(version)
     if (
         version.status not in OPEN_STATUSES
@@ -126,14 +129,15 @@ def submit_review(*, reviewer, version_id, decision, reason=""):
         or Finalization.objects.filter(version=version).exists()
         or version.reviews.filter(decision__in=COUNTED_DECISIONS).count() >= settings.max_votes
     ):
-        raise ReviewConflict("This version is closed for review.")
+        raise ReviewConflict("This version is closed for review.", code="review_closed")
     if version.is_control and version.reference_decision not in COUNTED_DECISIONS:
-        raise ReviewError("Control version requires a counted reference decision.")
+        raise ReviewError("Control version requires a counted reference decision.", code="invalid")
     profile = _profile(reviewer.pk, settings)
     review = Review.objects.create(
         version=version,
         reviewer=reviewer,
         decision=decision,
+        reason_code=reason_code,
         reason=reason,
         weight_snapshot=profile.weight,
         quality_settings=settings,

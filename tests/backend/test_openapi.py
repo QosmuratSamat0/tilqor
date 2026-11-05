@@ -114,10 +114,11 @@ def test_error_components_and_endpoint_error_references(api_client):
     assert schemas["DetailError"]["example"] == {
         "detail": "Authentication credentials were not provided."
     }
-    assert schemas["FieldErrors"]["additionalProperties"] == {
+    assert schemas["FieldErrors"]["additionalProperties"]["oneOf"][0] == {
         "type": "array",
         "items": {"type": "string"},
     }
+    assert "codes" in schemas["FieldErrors"]["properties"]
     assert schemas["FieldErrors"]["example"] == {"text_kk": ["Text cannot be empty."]}
 
     contrib_400 = schema["paths"]["/api/tasks/{task_id}/contributions/"]["post"]["responses"][
@@ -138,7 +139,7 @@ def test_real_error_responses_match_documented_shapes(api_client, make_user):
     anon_resp = api_client.get("/api/tasks/")
     assert anon_resp.status_code == 403
     anon_body = anon_resp.json()
-    assert set(anon_body) == {"detail"}
+    assert set(anon_body) == {"detail", "code"}
     assert isinstance(anon_body["detail"], str) and anon_body["detail"]
 
     author = make_user(username="author_err", role=User.Role.PARTICIPANT)
@@ -159,6 +160,7 @@ def test_real_error_responses_match_documented_shapes(api_client, make_user):
         and values
         and all(isinstance(item, str) for item in values)
         for key, values in bad_body.items()
+        if key not in {"codes", "params"}
     )
 
     contribution = Contribution.objects.create(task=task, author=author)
@@ -166,12 +168,10 @@ def test_real_error_responses_match_documented_shapes(api_client, make_user):
         contribution=contribution, number=1, text_kk="Қазақша аударма"
     )
     api_client.force_authenticate(reviewer)
-    first_vote = api_client.post(
-        "/api/reviews/", {"version_id": version.pk, "decision": "accept"}
-    )
+    first_vote = api_client.post("/api/reviews/", {"version_id": version.pk, "decision": "accept"})
     assert first_vote.status_code == 201
     dup_vote = api_client.post("/api/reviews/", {"version_id": version.pk, "decision": "accept"})
     assert dup_vote.status_code == 409
     dup_body = dup_vote.json()
-    assert set(dup_body) == {"detail"}
+    assert set(dup_body) == {"detail", "code"}
     assert isinstance(dup_body["detail"], str) and dup_body["detail"]

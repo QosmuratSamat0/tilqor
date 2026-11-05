@@ -13,7 +13,13 @@ pytestmark = pytest.mark.django_db
 
 
 def cast(version, reviewer, decision="accept", reason="Explanation"):
-    return submit_review(reviewer=reviewer, version_id=version.pk, decision=decision, reason=reason)
+    return submit_review(
+        reason_code=("other" if decision in ("reject", "edit") else ""),
+        reviewer=reviewer,
+        version_id=version.pk,
+        decision=decision,
+        reason=reason,
+    )
 
 
 def escalate(version, reviewer_factory):

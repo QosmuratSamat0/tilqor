@@ -8,6 +8,7 @@ import {
   type FieldErrors,
 } from "../../shared/api/client";
 import { queryKeys } from "../../shared/api/queryKeys";
+import { errorFeedback } from "../../shared/i18n/feedback";
 import {
   Button,
   EmptyState,
@@ -18,6 +19,8 @@ import { useAuth } from "../auth/AuthContext";
 import styles from "./ReviewPage.module.css";
 
 const DECISIONS: DecisionEnum[] = ["accept", "edit", "reject", "dont_know"];
+const REASON_CODES = ["wrong_term", "russian_connector", "grammar", "other"] as const;
+type ReasonCode = typeof REASON_CODES[number];
 
 export function ReviewPage() {
   const { t } = useTranslation();
@@ -26,6 +29,7 @@ export function ReviewPage() {
 
   const [decision, setDecision] = useState<DecisionEnum>("accept");
   const [reason, setReason] = useState("");
+  const [reasonCode, setReasonCode] = useState<ReasonCode | "">("");
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -70,9 +74,15 @@ export function ReviewPage() {
     setDetailError(null);
     setSuccessMessage(null);
 
-    if (requiresReason && !reason.trim()) {
+    if (requiresReason && !reasonCode) {
       setFieldErrors({
-        reason: [t("review.reasonRequiredError")],
+        reason_code: [t("feedback.error.reason_required")],
+      });
+      return;
+    }
+    if (requiresReason && reasonCode === "other" && !reason.trim()) {
+      setFieldErrors({
+        reason: [t("feedback.error.comment_required")],
       });
       return;
     }
@@ -82,9 +92,11 @@ export function ReviewPage() {
       await api.reviews.submit({
         version_id: currentItem.id,
         decision,
+        reason_code: requiresReason ? reasonCode : "",
         reason: reason.trim(),
       });
       setReason("");
+      setReasonCode("");
       setDecision("accept");
       setSuccessMessage(t("review.reviewSuccess"));
       await queryClient.invalidateQueries({
@@ -95,12 +107,11 @@ export function ReviewPage() {
       });
     } catch (err) {
       if (err instanceof ApiError) {
-        setFieldErrors(err.fieldErrors);
-        if (err.detail) {
-          setDetailError(err.detail);
-        } else if (!err.hasFieldErrors) {
-          setDetailError(err.message);
-        }
+        const feedback = errorFeedback(err, t);
+        setFieldErrors(feedback.fields);
+        if (feedback.detail || !Object.keys(feedback.fields).some(
+          (field) => field === "reason" || field === "reason_code"
+        )) setDetailError(feedback.message);
       } else {
         setDetailError(t("app.errorGeneric"));
       }
@@ -148,8 +159,8 @@ export function ReviewPage() {
           ) : queueQuery.isError ? (
             <div>
               <ErrorMessage>
-                {queueQuery.error instanceof Error
-                  ? queueQuery.error.message
+                {queueQuery.error instanceof ApiError
+                  ? errorFeedback(queueQuery.error, t).message
                   : t("app.errorGeneric")}
               </ErrorMessage>
               <Button
@@ -230,9 +241,9 @@ export function ReviewPage() {
                             checked={checked}
                             onChange={() => {
                               setDecision(d);
-                              if (d === "accept" || d === "dont_know") {
-                                setFieldErrors({});
-                              }
+                              setFieldErrors({});
+                              setReasonCode("");
+                              setReason("");
                             }}
                           />
                           <span>{decisionLabel(d)}</span>
@@ -242,12 +253,44 @@ export function ReviewPage() {
                   </div>
                 </fieldset>
 
+                {requiresReason ? (
+                  <fieldset className={styles.fieldset}>
+                    <legend className={styles.legend}>{t("review.reasonCodeLabel")}</legend>
+                    <div className={styles.radioGrid}>
+                      {REASON_CODES.map((code) => (
+                        <label key={code} className={styles.radioOption}>
+                          <input
+                            type="radio"
+                            name="reason_code"
+                            value={code}
+                            checked={reasonCode === code}
+                            required
+                            aria-invalid={Boolean(fieldErrors.reason_code) || undefined}
+                            aria-describedby={fieldErrors.reason_code ? "reason-code-error" : undefined}
+                            onChange={() => {
+                              setReasonCode(code);
+                              setFieldErrors({});
+                            }}
+                          />
+                          <span>{t(`review.reasonCode.${code}`)}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {fieldErrors.reason_code ? (
+                      <p id="reason-code-error" role="alert" className={styles.fieldError}>
+                        {fieldErrors.reason_code.join(" ")}
+                      </p>
+                    ) : null}
+                  </fieldset>
+                ) : null}
+
                 <Field
                   multiline
                   label={t("review.reasonLabel")}
                   placeholder={t("review.reasonPlaceholder")}
                   name="reason"
-                  required={requiresReason}
+                  required={requiresReason && reasonCode === "other"}
+                  hint={t("review.commentHint")}
                   value={reason}
                   onChange={(e) => {
                     setReason(e.target.value);

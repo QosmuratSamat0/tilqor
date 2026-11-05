@@ -24,7 +24,11 @@ describe("MyContributionsPage", () => {
             number: 1,
             text_kk: "Деректер базасы сервері",
             status: "needs_edit",
-            decision_reasons: ["Используйте термин «Дерекқор сервері»."],
+            decision_reasons: [
+              { code: "wrong_term", comment: "Используйте термин «Дерекқор сервері»." },
+              { code: "russian_connector", comment: "" },
+              { code: null, comment: "Комментарий модератора." },
+            ],
             created_at: "2026-04-01T09:00:00Z",
           },
         ],
@@ -83,8 +87,10 @@ describe("MyContributionsPage", () => {
 
     expect(await screen.findByText("Сервер баз данных")).toBeInTheDocument();
     expect(
-      screen.getByText("Используйте термин «Дерекқор сервері».")
+      screen.getByText("Неверный термин: Используйте термин «Дерекқор сервері».")
     ).toBeInTheDocument();
+    expect(screen.getByText("Русская связка", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("Комментарий модератора.", { exact: true })).toBeInTheDocument();
 
     const submitButtons = screen.getAllByRole("button", {
       name: /Отправить новую версию/i,
