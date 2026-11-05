@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "apps.glossary",
     "apps.verification",
     "apps.exports",
+    "apps.evaluation",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

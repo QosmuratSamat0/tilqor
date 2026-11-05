@@ -15,7 +15,15 @@ class Replay:
     controls: dict[str, dict[str, int]]
 
 
-def replay(records, ballots_by_record, quality=None, controls=frozenset(), *, initial_weights=None):
+def replay(
+    records,
+    ballots_by_record,
+    quality=None,
+    controls=frozenset(),
+    *,
+    initial_weights=None,
+    assume_reference_resolution=True,
+):
     """Moderators resolve escalations with reference labels: a simulation assumption.
 
     Incomplete records (< max counted votes, no outcome) do not finalize or update
@@ -81,7 +89,11 @@ def replay(records, ballots_by_record, quality=None, controls=frozenset(), *, in
                     break
             if counted >= quality.max_votes:
                 break
-        final = record.reference_decision if is_control or escalated else decision
+        final = (
+            record.reference_decision
+            if is_control or (escalated and assume_reference_resolution)
+            else decision
+        )
         if not is_control and final is not None:
             for ballot in consumed:
                 update(ballot, final)

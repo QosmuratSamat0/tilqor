@@ -87,3 +87,45 @@ def test_incomplete_record_and_abstentions_do_not_change_reputation(ballots):
     result = replay([Record("r", "edit")], {"r": ballots(["accept", "dont_know", "edit"])})
     assert result.outcomes[0].status == "pending"
     assert set(result.final_weights.values()) == {"1.00"}
+
+
+def test_control_uses_all_votes_and_only_control_updates(ballots):
+    records = [Record(str(i), "accept") for i in range(40)]
+    votes = {
+        r.id: ballots(["accept", "accept", "accept", "reject", "reject"], r.id) for r in records
+    }
+    result = replay(records, votes, controls={r.id for r in records})
+    assert all(outcome.counted_votes == 5 for outcome in result.outcomes)
+    assert result.final_weights == {"0": "2.00", "1": "2.00", "2": "2.00", "3": "0.50", "4": "0.50"}
+    assert result.controls["0"]["counted"] == 40
+
+
+def test_calls_production_rule_at_each_counted_point_then_stops(ballots, monkeypatch):
+    from apps.evaluation.domain import replay as module
+
+    production_evaluate = module.evaluate
+    seen = []
+
+    def traced(votes, rules):
+        seen.append(sum(v.decision != "dont_know" for v in votes))
+        return production_evaluate(votes, rules)
+
+    monkeypatch.setattr(module, "evaluate", traced)
+    result = replay(
+        [Record("r", "accept")],
+        {"r": ballots(["accept", "reject", "edit", "dont_know", "accept", "reject", "accept"])},
+    )
+    assert seen == [3, 4, 5]
+    assert result.outcomes[0].used_seqs == (1, 2, 3, 4, 5, 6)
+    assert result.final_weights["6"] == "1.00"
+
+
+def test_real_replay_does_not_invent_moderator_resolutions(ballots):
+    result = replay(
+        [Record("r", "edit")],
+        {"r": ballots(["accept", "reject", "edit", "accept", "reject"])},
+        assume_reference_resolution=False,
+    )
+    assert result.outcomes[0].status == "escalated"
+    assert result.outcomes[0].reputation_reference is None
+    assert set(result.final_weights.values()) == {"1.00"}

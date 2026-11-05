@@ -11,6 +11,7 @@ MANAGE := $(PY) src/backend/manage.py
 
 .DEFAULT_GOAL := help
 .PHONY: help setup up down db logs run migrate shell superuser lint migrations-check test check fe-install fe-dev fe-check
+.PHONY: evaluate evaluate-synthetic-demo
 
 help:
 	@echo Setup
@@ -34,6 +35,9 @@ help:
 	@echo   make test              pytest
 	@echo   make check             lint + migrations-check + test
 	@echo   make fe-check          frontend lint + typecheck + test + build
+	@echo Evaluation
+	@echo   make evaluate RECORDS=path   run the three frozen simulation scenarios
+	@echo   make evaluate-synthetic-demo  synthetic pipeline check only
 
 setup:
 	python -m venv .venv
@@ -82,3 +86,16 @@ fe-dev:
 
 fe-check:
 	cd src/frontend && npm run lint && npm run typecheck && npm test -- --run && npm run build
+
+evaluate:
+	$(if $(strip $(RECORDS)),,$(error Supply RECORDS=path/to/records.csv))
+	$(MANAGE) simulate_votes --records "$(RECORDS)" --profiles data/evaluation/simulation/mixed.json --out data/evaluation/runs/mixed/votes.csv
+	$(MANAGE) evaluate --records data/evaluation/runs/mixed/votes.records.csv --votes data/evaluation/runs/mixed/votes.csv --quality data/evaluation/quality.json --label simulation --out data/evaluation/runs/mixed
+	$(MANAGE) simulate_votes --records "$(RECORDS)" --profiles data/evaluation/simulation/reliable.json --out data/evaluation/runs/reliable/votes.csv
+	$(MANAGE) evaluate --records data/evaluation/runs/reliable/votes.records.csv --votes data/evaluation/runs/reliable/votes.csv --quality data/evaluation/quality.json --label simulation --out data/evaluation/runs/reliable
+	$(MANAGE) simulate_votes --records "$(RECORDS)" --profiles data/evaluation/simulation/noisy.json --out data/evaluation/runs/noisy/votes.csv
+	$(MANAGE) evaluate --records data/evaluation/runs/noisy/votes.records.csv --votes data/evaluation/runs/noisy/votes.csv --quality data/evaluation/quality.json --label simulation --out data/evaluation/runs/noisy
+
+evaluate-synthetic-demo:
+	$(MANAGE) simulate_votes --records tests/backend/evaluation/fixtures/records_synthetic.csv --profiles data/evaluation/simulation/mixed.json --out data/evaluation/runs/synthetic-demo/votes.csv
+	$(MANAGE) evaluate --records data/evaluation/runs/synthetic-demo/votes.records.csv --votes data/evaluation/runs/synthetic-demo/votes.csv --quality data/evaluation/quality.json --label simulation --out data/evaluation/runs/synthetic-demo
