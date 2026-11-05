@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -38,6 +38,8 @@ function TaskDetailContent({ id }: { id: string | undefined }) {
   const [preferenceSubmittingId, setPreferenceSubmittingId] = useState<
     number | null
   >(null);
+  const preferenceQueue = useRef(Promise.resolve());
+  const preferenceRequest = useRef(0);
 
   const {
     data: task,
@@ -94,19 +96,24 @@ function TaskDetailContent({ id }: { id: string | undefined }) {
   }
 
   async function handleChooseVariant(versionId: number) {
+    const request = ++preferenceRequest.current;
     setPreferenceSubmittingId(versionId);
     setDetailError(null);
+    // Keep native radio focus while serializing writes, including rapid arrow-key changes.
+    const save = preferenceQueue.current.then(() => api.tasks.setPreference(taskId, versionId));
+    preferenceQueue.current = save.then(() => undefined, () => undefined);
     try {
-      const pref = await api.tasks.setPreference(taskId, versionId);
-      setChosenVersionId(pref.version_id);
+      const pref = await save;
+      if (request === preferenceRequest.current) setChosenVersionId(pref.version_id);
     } catch (err) {
+      if (request !== preferenceRequest.current) return;
       if (err instanceof ApiError) {
         setDetailError(errorFeedback(err, t).message);
       } else {
         setDetailError(t("app.errorGeneric"));
       }
     } finally {
-      setPreferenceSubmittingId(null);
+      if (request === preferenceRequest.current) setPreferenceSubmittingId(null);
     }
   }
 
@@ -265,7 +272,9 @@ function TaskDetailContent({ id }: { id: string | undefined }) {
             {task.variants.length === 0 ? (
               <p>{t("contribute.otherVariantsEmpty")}</p>
             ) : (
-              <ul className={styles.variantsList}>
+              <fieldset className={styles.termFieldset} aria-busy={preferenceSubmittingId !== null}>
+                <legend>{t("contribute.termChoiceLabel")}</legend>
+                <ul className={styles.variantsList}>
                 {task.variants.map((variant) => {
                   const isChosen = chosenVersionId === variant.id;
                   return (
@@ -276,9 +285,9 @@ function TaskDetailContent({ id }: { id: string | undefined }) {
                       }`.trim()}
                     >
                       <div>
-                        <div className={styles.variantText}>
+                        <label htmlFor={`term-variant-${variant.id}`} className={styles.variantText}>
                           {variant.text_kk}
-                        </div>
+                        </label>
                         <div className={styles.variantMeta}>
                           <StatusBadge status={variant.status} />
                           <span>
@@ -289,21 +298,21 @@ function TaskDetailContent({ id }: { id: string | undefined }) {
                         </div>
                       </div>
                       <div>
-                        <Button
-                          variant={isChosen ? "primary" : "secondary"}
-                          size="small"
-                          disabled={preferenceSubmittingId === variant.id}
-                          onClick={() => void handleChooseVariant(variant.id)}
-                        >
-                          {isChosen
-                            ? t("contribute.chosenVariantBadge")
-                            : t("contribute.chooseVariantButton")}
-                        </Button>
+                        <input
+                          id={`term-variant-${variant.id}`}
+                          type="radio"
+                          name="term_variant"
+                          value={variant.id}
+                          checked={isChosen}
+                          onChange={() => void handleChooseVariant(variant.id)}
+                        />
+                        {isChosen ? <span role="status">{t("contribute.chosenVariantBadge")}</span> : null}
                       </div>
                     </li>
                   );
                 })}
-              </ul>
+                </ul>
+              </fieldset>
             )}
           </section>
 

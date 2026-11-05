@@ -214,6 +214,17 @@
   background-color: var(--color-primary-subtle);
 }
 
+.termFieldset {
+  border: 0;
+  padding: 0;
+  margin: var(--space-4) 0 0;
+  min-width: 0;
+}
+
+.termFieldset legend {
+  font-weight: 700;
+}
+
 .variantText {
   font-size: var(--text-lg);
   font-weight: 700;

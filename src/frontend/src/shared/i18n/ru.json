@@ -128,7 +128,8 @@
     "submitTermButton": "Предложить вариант",
     "variantAuthor": "Автор: {{name}}",
     "ownStatus": "Статус вашего варианта:",
-    "myTranslations": "Мои переводы"
+    "myTranslations": "Мои переводы",
+    "termChoiceLabel": "Ваш выбор термина"
   },
   "review": {
     "title": "Очередь проверки переводов и терминов",

@@ -128,7 +128,8 @@
     "submitTermButton": "",
     "variantAuthor": "",
     "ownStatus": "",
-    "myTranslations": ""
+    "myTranslations": "",
+    "termChoiceLabel": ""
   },
   "review": {
     "title": "",
