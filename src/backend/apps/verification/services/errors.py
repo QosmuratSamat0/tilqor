@@ -1,5 +1,8 @@
-class ReviewError(Exception):
-    status_code = 400
+from common.feedback import FeedbackError
+
+
+class ReviewError(FeedbackError):
+    pass
 
 
 class ReviewForbidden(ReviewError):

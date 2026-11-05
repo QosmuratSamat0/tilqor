@@ -59,13 +59,19 @@ class VersionSummarySerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class WarningSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    params = serializers.DictField(child=serializers.JSONField())
+    message = serializers.CharField()
+
+
 class ContributionSubmissionSerializer(serializers.Serializer):
     id = serializers.IntegerField(source="contribution.id", read_only=True)
     task_id = serializers.IntegerField(source="contribution.task_id", read_only=True)
     created_at = serializers.DateTimeField(source="contribution.created_at", read_only=True)
     version = VersionSummarySerializer(read_only=True)
     warnings = serializers.DictField(
-        child=serializers.ListField(child=serializers.CharField()), read_only=True
+        child=serializers.ListField(child=WarningSerializer()), read_only=True
     )
 
 
@@ -77,7 +83,7 @@ class VersionSubmissionSerializer(serializers.Serializer):
     status = serializers.CharField(source="version.status", read_only=True)
     created_at = serializers.DateTimeField(source="version.created_at", read_only=True)
     warnings = serializers.DictField(
-        child=serializers.ListField(child=serializers.CharField()), read_only=True
+        child=serializers.ListField(child=WarningSerializer()), read_only=True
     )
 
 

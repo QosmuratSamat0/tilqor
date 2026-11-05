@@ -65,7 +65,7 @@ def test_missing_kazakh_letters_produces_warning_not_error():
     result = check_text("Машина жасау саласы", max_length=200, russian_connectors=CONNECTORS)
     assert not result.errors
     assert len(result.warnings) == 1
-    assert "Kazakh-specific" in result.warnings[0]
+    assert result.warnings == (("no_kazakh_letters", {}),)
 
 
 @pytest.mark.parametrize(
@@ -91,7 +91,7 @@ def test_connector_warning_is_returned_without_rejecting():
         russian_connectors=CONNECTORS,
     )
     assert not result.errors
-    assert any("но" in warning for warning in result.warnings)
+    assert ("russian_connectors", {"connectors": ["но"]}) in result.warnings
 
 
 def test_shuffle_variants_is_deterministic_with_seed_and_non_identity():

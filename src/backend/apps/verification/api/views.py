@@ -35,7 +35,7 @@ class ReviewView(APIView):
         try:
             review = submit_review(reviewer=request.user, **serializer.validated_data)
         except ReviewError as exc:
-            return Response({"detail": str(exc)}, status=exc.status_code)
+            return Response(exc.as_dict(), status=exc.status_code)
         return Response(ReviewSerializer(review).data, status=status.HTTP_201_CREATED)
 
 

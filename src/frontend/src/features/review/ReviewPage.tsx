@@ -8,6 +8,7 @@ import {
   type FieldErrors,
 } from "../../shared/api/client";
 import { queryKeys } from "../../shared/api/queryKeys";
+import { errorFeedback } from "../../shared/i18n/feedback";
 import {
   Button,
   EmptyState,
@@ -95,12 +96,11 @@ export function ReviewPage() {
       });
     } catch (err) {
       if (err instanceof ApiError) {
-        setFieldErrors(err.fieldErrors);
-        if (err.detail) {
-          setDetailError(err.detail);
-        } else if (!err.hasFieldErrors) {
-          setDetailError(err.message);
-        }
+        const feedback = errorFeedback(err, t);
+        setFieldErrors(feedback.fields);
+        if (feedback.detail || !Object.keys(feedback.fields).some(
+          (field) => field === "reason" || field === "reason_code"
+        )) setDetailError(feedback.message);
       } else {
         setDetailError(t("app.errorGeneric"));
       }
@@ -148,8 +148,8 @@ export function ReviewPage() {
           ) : queueQuery.isError ? (
             <div>
               <ErrorMessage>
-                {queueQuery.error instanceof Error
-                  ? queueQuery.error.message
+                {queueQuery.error instanceof ApiError
+                  ? errorFeedback(queueQuery.error, t).message
                   : t("app.errorGeneric")}
               </ErrorMessage>
               <Button

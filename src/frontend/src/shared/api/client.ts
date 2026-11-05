@@ -40,6 +40,11 @@ export type PaginatedDictionaryTermList =
   components["schemas"]["PaginatedDictionaryTermList"];
 
 export type FieldErrors = Record<string, string[]>;
+export interface Feedback {
+  code: string;
+  params: Record<string, unknown>;
+  message: string;
+}
 export type DetailError = components["schemas"]["DetailError"];
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -62,17 +67,29 @@ export class ApiError extends Error {
   public readonly status: number;
   public readonly detail: string | null;
   public readonly fieldErrors: FieldErrors;
+  public readonly fieldCodes: FieldErrors;
+  public readonly code: string | null;
+  public readonly params: Record<string, Record<string, unknown>>;
 
   constructor(
     status: number,
     message: string,
-    options?: { detail?: string | null; fieldErrors?: FieldErrors }
+    options?: {
+      detail?: string | null;
+      fieldErrors?: FieldErrors;
+      fieldCodes?: FieldErrors;
+      code?: string | null;
+      params?: Record<string, Record<string, unknown>>;
+    }
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.detail = options?.detail ?? null;
     this.fieldErrors = options?.fieldErrors ?? {};
+    this.fieldCodes = options?.fieldCodes ?? {};
+    this.code = options?.code ?? null;
+    this.params = options?.params ?? {};
   }
 
   public get hasFieldErrors(): boolean {
@@ -86,12 +103,9 @@ export function parseErrorPayload(
 ): ApiError {
   if (payload && typeof payload === "object" && !Array.isArray(payload)) {
     const record = payload as Record<string, unknown>;
-    if (typeof record.detail === "string" && Object.keys(record).length === 1) {
-      return new ApiError(status, record.detail, { detail: record.detail });
-    }
-
     const fieldErrors: FieldErrors = {};
     for (const [key, value] of Object.entries(record)) {
+      if (["detail", "codes", "code", "params"].includes(key)) continue;
       if (Array.isArray(value)) {
         const messages = value.filter((item): item is string => typeof item === "string");
         if (messages.length > 0) {
@@ -102,12 +116,18 @@ export function parseErrorPayload(
       }
     }
 
-    if (Object.keys(fieldErrors).length > 0) {
+    if (Object.keys(fieldErrors).length > 0 || typeof record.detail === "string") {
       const firstField = Object.keys(fieldErrors)[0];
-      const summary = fieldErrors[firstField][0] || `HTTP ${status}`;
+      const summary = typeof record.detail === "string"
+        ? record.detail : fieldErrors[firstField][0] || `HTTP ${status}`;
       return new ApiError(status, summary, {
         detail: typeof record.detail === "string" ? record.detail : null,
         fieldErrors,
+        fieldCodes: record.codes && typeof record.codes === "object"
+          ? record.codes as FieldErrors : {},
+        code: typeof record.code === "string" ? record.code : null,
+        params: record.params && typeof record.params === "object"
+          ? record.params as Record<string, Record<string, unknown>> : {},
       });
     }
   }

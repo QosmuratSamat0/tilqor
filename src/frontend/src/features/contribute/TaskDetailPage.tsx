@@ -8,6 +8,7 @@ import {
   type FieldErrors,
 } from "../../shared/api/client";
 import { queryKeys } from "../../shared/api/queryKeys";
+import { errorFeedback, warningText } from "../../shared/i18n/feedback";
 import {
   Button,
   ErrorMessage,
@@ -55,7 +56,7 @@ export function TaskDetailPage() {
     try {
       const response = await api.tasks.submitContribution(taskId, textKk);
       const collectedWarnings = Object.values(response.warnings ?? {}).flat();
-      setWarnings(collectedWarnings);
+      setWarnings(collectedWarnings.map((warning) => warningText(warning, t)));
       setHasSubmittedOwn(true);
       setTextKk("");
       await queryClient.invalidateQueries({
@@ -66,12 +67,11 @@ export function TaskDetailPage() {
       });
     } catch (err) {
       if (err instanceof ApiError) {
-        setFieldErrors(err.fieldErrors);
-        if (err.detail) {
-          setDetailError(err.detail);
-        } else if (!err.hasFieldErrors) {
-          setDetailError(err.message);
-        }
+        const feedback = errorFeedback(err, t);
+        setFieldErrors(feedback.fields);
+        if (feedback.detail || !Object.keys(feedback.fields).some(
+          (field) => field === "text_kk" || field === "task"
+        )) setDetailError(feedback.message);
       } else {
         setDetailError(t("app.errorGeneric"));
       }
@@ -88,11 +88,7 @@ export function TaskDetailPage() {
       setChosenVersionId(pref.version_id);
     } catch (err) {
       if (err instanceof ApiError) {
-        const msg =
-          err.detail ||
-          Object.values(err.fieldErrors).flat()[0] ||
-          err.message;
-        setDetailError(msg);
+        setDetailError(errorFeedback(err, t).message);
       } else {
         setDetailError(t("app.errorGeneric"));
       }
@@ -109,7 +105,7 @@ export function TaskDetailPage() {
     return (
       <div>
         <ErrorMessage>
-          {error instanceof Error ? error.message : t("app.errorGeneric")}
+          {error instanceof ApiError ? errorFeedback(error, t).message : t("app.errorGeneric")}
         </ErrorMessage>
         <Button variant="secondary" onClick={() => void refetch()}>
           {t("app.retry")}

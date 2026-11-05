@@ -12,8 +12,8 @@ KAZAKH_LETTERS = frozenset("әғқңөұүһі")
 @dataclass(frozen=True)
 class CheckResult:
     text: str
-    errors: tuple[str, ...]
-    warnings: tuple[str, ...]
+    errors: tuple[tuple[str, dict], ...]
+    warnings: tuple[tuple[str, dict], ...]
 
 
 def normalize_text(text: str) -> str:
@@ -51,27 +51,24 @@ def check_text(
 ) -> CheckResult:
     """Validate submission text and collect non-blocking quality warnings (FR-07)."""
     normalized = normalize_text(text)
-    errors: list[str] = []
-    warnings: list[str] = []
+    errors: list[tuple[str, dict]] = []
+    warnings: list[tuple[str, dict]] = []
 
     if not normalized:
-        errors.append("Text cannot be empty.")
+        errors.append(("empty_text", {}))
     elif len(normalized) > max_length:
-        errors.append(f"Text cannot exceed {max_length} characters.")
+        errors.append(("text_too_long", {"max_length": max_length}))
 
     normalized_existing = {normalize_text(item) for item in existing_texts}
     if normalized and normalized in normalized_existing:
-        errors.append("This variant already exists for this task.")
+        errors.append(("duplicate_variant", {}))
 
     if normalized and not errors:
         if not has_kazakh_letters(normalized):
-            warnings.append(
-                "Text contains no Kazakh-specific letters (ә, ғ, қ, ң, ө, ұ, ү, һ, і)."
-            )
+            warnings.append(("no_kazakh_letters", {}))
         matched_connectors = find_russian_connectors(normalized, russian_connectors)
         if matched_connectors:
-            joined = ", ".join(matched_connectors)
-            warnings.append(f"Text contains Russian connector(s): {joined}.")
+            warnings.append(("russian_connectors", {"connectors": matched_connectors}))
 
     return CheckResult(
         text=normalized,

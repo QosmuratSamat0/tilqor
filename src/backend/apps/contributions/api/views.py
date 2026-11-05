@@ -101,7 +101,9 @@ class TaskDetailView(APIView):
     def get(self, request, task_id: int):
         task = task_detail(task_id=task_id, user=request.user, rng=Random())
         if task is None:
-            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Not found.", "code": "not_found"}, status=status.HTTP_404_NOT_FOUND
+            )
         return Response(TaskDetailSerializer(task).data)
 
 

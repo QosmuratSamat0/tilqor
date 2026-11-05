@@ -199,5 +199,38 @@
     "sourceLabel": "",
     "backToDictionary": "",
     "openTermCard": ""
+  },
+  "feedback": {
+    "warning": {
+      "no_kazakh_letters": "",
+      "russian_connectors": ""
+    },
+    "error": {
+      "empty_text": "",
+      "text_too_long": "",
+      "duplicate_variant": "",
+      "already_submitted": "",
+      "terms_not_accepted": "",
+      "reason_required": "",
+      "comment_required": "",
+      "reason_not_allowed": "",
+      "invalid_choice": "",
+      "required": "",
+      "null": "",
+      "not_authenticated": "",
+      "permission_denied": "",
+      "invalid": "",
+      "not_found": "",
+      "task_inactive": "",
+      "author_required": "",
+      "version_not_editable": "",
+      "term_task_required": "",
+      "invalid_variant": "",
+      "settings_unavailable": "",
+      "reviewer_required": "",
+      "self_review": "",
+      "already_reviewed": "",
+      "review_closed": ""
+    }
   }
 }
