@@ -15,15 +15,12 @@ def eligible_versions():
         Q(contribution__task__source_sentence__is_original=True)
         | ~Q(contribution__task__source_sentence__licence="")
     )
-    term_source_eligible = (
-        Q(contribution__task__term__source="")
-        | ~Q(contribution__task__term__licence="")
+    term_source_eligible = Q(contribution__task__term__source="") | ~Q(
+        contribution__task__term__licence=""
     )
     term_variant_eligible = Q(source="") | ~Q(licence="")
     term_eligible = (
-        Q(contribution__task__type=Task.Type.TERM)
-        & term_source_eligible
-        & term_variant_eligible
+        Q(contribution__task__type=Task.Type.TERM) & term_source_eligible & term_variant_eligible
     )
     return (
         ContributionVersion.objects.filter(
@@ -69,9 +66,7 @@ def listed_task_variants(task: Task):
     )
 
 
-def visible_variants(
-    *, task: Task, user, rng: Random | None = None
-) -> list[ContributionVersion]:
+def visible_variants(*, task: Task, user, rng: Random | None = None) -> list[ContributionVersion]:
     """Return variants visible to `user` for `task` (FR-04 blind flow, FR-05 shuffled terms)."""
     base = (
         listed_task_variants(task)
@@ -79,7 +74,14 @@ def visible_variants(
         .order_by("created_at", "pk")
     )
     if task.type == Task.Type.TRANSLATION:
-        if not Contribution.objects.filter(task=task, author=user).exists():
+        if not getattr(user, "is_authenticated", False):
+            return []
+        has_own = (
+            task.own_contribution is not None
+            if hasattr(task, "own_contribution")
+            else Contribution.objects.filter(task=task, author=user).exists()
+        )
+        if not has_own:
             return []
         return list(base.exclude(contribution__author=user))
     return shuffle_variants(list(base), rng or Random())
@@ -94,6 +96,20 @@ def task_detail(*, task_id: int, user, rng: Random | None = None) -> Task | None
     )
     if task is None:
         return None
+    task.own_contribution = None
+    if getattr(user, "is_authenticated", False):
+        latest = (
+            ContributionVersion.objects.filter(contribution__task=task, contribution__author=user)
+            .order_by("-number")
+            .values("contribution_id", "status", "number")
+            .first()
+        )
+        if latest:
+            task.own_contribution = {
+                "id": latest["contribution_id"],
+                "status": latest["status"],
+                "latest_version_number": latest["number"],
+            }
     task.visible_variants = visible_variants(task=task, user=user, rng=rng)
     return task
 

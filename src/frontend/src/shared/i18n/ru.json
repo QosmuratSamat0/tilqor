@@ -126,7 +126,9 @@
     "termInputLabel": "Новый вариант термина на казахском",
     "termPlaceholder": "Введите свой вариант термина...",
     "submitTermButton": "Предложить вариант",
-    "variantAuthor": "Автор: {{name}}"
+    "variantAuthor": "Автор: {{name}}",
+    "ownStatus": "Статус вашего варианта:",
+    "myTranslations": "Мои переводы"
   },
   "review": {
     "title": "Очередь проверки переводов и терминов",

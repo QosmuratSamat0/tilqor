@@ -126,7 +126,9 @@
     "termInputLabel": "",
     "termPlaceholder": "",
     "submitTermButton": "",
-    "variantAuthor": ""
+    "variantAuthor": "",
+    "ownStatus": "",
+    "myTranslations": ""
   },
   "review": {
     "title": "",

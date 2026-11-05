@@ -6,6 +6,7 @@ import {
   api,
   ApiError,
   type FieldErrors,
+  type TaskDetail,
 } from "../../shared/api/client";
 import { queryKeys } from "../../shared/api/queryKeys";
 import { errorFeedback, warningText } from "../../shared/i18n/feedback";
@@ -19,13 +20,17 @@ import styles from "./ContributePages.module.css";
 
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
+  return <TaskDetailContent key={id} id={id} />;
+}
+
+function TaskDetailContent({ id }: { id: string | undefined }) {
   const taskId = Number(id);
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const [textKk, setTextKk] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [hasSubmittedOwn, setHasSubmittedOwn] = useState(false);
+  const [submittedOwn, setSubmittedOwn] = useState<TaskDetail["own_contribution"]>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -57,7 +62,15 @@ export function TaskDetailPage() {
       const response = await api.tasks.submitContribution(taskId, textKk);
       const collectedWarnings = Object.values(response.warnings ?? {}).flat();
       setWarnings(collectedWarnings.map((warning) => warningText(warning, t)));
-      setHasSubmittedOwn(true);
+      const own = {
+        id: response.id,
+        status: response.version.status,
+        latest_version_number: response.version.number,
+      };
+      setSubmittedOwn(own);
+      queryClient.setQueryData<TaskDetail>(queryKeys.tasks.detail(taskId), (previous) =>
+        previous ? { ...previous, own_contribution: own } : previous
+      );
       setTextKk("");
       await queryClient.invalidateQueries({
         queryKey: queryKeys.tasks.detail(taskId),
@@ -115,6 +128,8 @@ export function TaskDetailPage() {
   }
 
   const isTranslation = task.type === "translation";
+  const ownContribution = task.own_contribution ?? submittedOwn;
+  const hasSubmittedOwn = ownContribution != null;
   const showTranslationVariants =
     isTranslation && (hasSubmittedOwn || task.variants.length > 0);
 
@@ -151,10 +166,17 @@ export function TaskDetailPage() {
 
         {detailError ? <ErrorMessage>{detailError}</ErrorMessage> : null}
 
-        {hasSubmittedOwn ? (
+        {submittedOwn ? (
           <div className={styles.successBox} role="status">
             {t("contribute.submittedSuccess")}
           </div>
+        ) : null}
+
+        {ownContribution ? (
+          <p role="status">
+            {t("contribute.ownStatus")} <StatusBadge status={ownContribution.status} />{" "}
+            <Link to="/my">{t("contribute.myTranslations")}</Link>
+          </p>
         ) : null}
 
         {warnings.length > 0 ? (
@@ -176,7 +198,7 @@ export function TaskDetailPage() {
               </p>
             ) : null}
 
-            <form
+            {!hasSubmittedOwn ? <form
               onSubmit={(e) => void handleContributionSubmit(e)}
               noValidate
             >
@@ -195,7 +217,7 @@ export function TaskDetailPage() {
                   ? t("contribute.submitting")
                   : t("contribute.submitTranslation")}
               </Button>
-            </form>
+            </form> : null}
           </>
         ) : null}
       </section>
@@ -285,7 +307,7 @@ export function TaskDetailPage() {
             )}
           </section>
 
-          <section className={styles.detailCard}>
+          {!hasSubmittedOwn ? <section className={styles.detailCard}>
             <h2>{t("contribute.suggestOwnTermTitle")}</h2>
             <form
               onSubmit={(e) => void handleContributionSubmit(e)}
@@ -306,7 +328,7 @@ export function TaskDetailPage() {
                   : t("contribute.submitTermButton")}
               </Button>
             </form>
-          </section>
+          </section> : null}
         </>
       ) : null}
     </div>

@@ -44,11 +44,18 @@ class VariantSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class OwnContributionSummarySerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    status = serializers.ChoiceField(choices=ContributionVersion.Status.choices)
+    latest_version_number = serializers.IntegerField()
+
+
 class TaskDetailSerializer(TaskSerializer):
     variants = VariantSerializer(source="visible_variants", many=True, read_only=True)
+    own_contribution = OwnContributionSummarySerializer(read_only=True, allow_null=True)
 
     class Meta(TaskSerializer.Meta):
-        fields = (*TaskSerializer.Meta.fields, "variants")
+        fields = (*TaskSerializer.Meta.fields, "variants", "own_contribution")
         read_only_fields = fields
 
 
