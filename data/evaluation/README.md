@@ -120,14 +120,12 @@ implementation supplies the expected values.
 
 ## Reproducibility
 
-The three-scenario Make command was run twice at source commit
+The three-scenario Make command was run twice on the synthetic fixture at source commit
 `be7ec55c0f607117128b8e18fe1724617d93eaec`. All 15 emitted files were byte-identical
-(votes, ordered snapshots, metadata, Markdown and JSON). The matching result
-hashes are in [runs/reproducibility.sha256](runs/reproducibility.sha256):
-
-```sh
-sha256sum --check data/evaluation/runs/reproducibility.sha256
-```
+(votes, ordered snapshots, metadata, Markdown and JSON). Only `runs/synthetic-demo/`
+is kept in the repository; `runs/mixed`, `runs/reliable` and `runs/noisy` are written
+by `make evaluate RECORDS=data/evaluation/records.csv` once the TIL-25 dataset is
+delivered, so synthetic numbers are never stored under the scenario names.
 
 Outputs omit wall-clock timestamps. Repeat with the same input paths, contents,
 implementation, Python version and Git commit for identical artifacts. A new Git
