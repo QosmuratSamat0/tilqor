@@ -1,6 +1,6 @@
 # Verification and evaluation plan
 
-Task: [TIL-7](https://qosmuratsamat.youtrack.cloud/issue/TIL-7). Status: **plan** for pre-defense-1. No tests have been run and no results exist yet; this document says how they will be obtained.
+Task: [TIL-7](https://qosmuratsamat.youtrack.cloud/issue/TIL-7). Status: **plan** prepared for pre-defense-1. This document defines the procedures; the later [TIL-26 implementation and synthetic pipeline check](../data/evaluation/README.md) cover §6 without establishing real-user results.
 
 Based on: [proposal](proposal.md), [requirements](requirements.md) (TIL-11), [architecture](architecture.md) (TIL-6), [risks](risks.md) (TIL-4) and [survey results](survey/results.md) (TIL-8).
 
@@ -127,6 +127,12 @@ The expected outcome, stated before measuring:
 With 100–200 records the sample is small. Results are reported as counts and percentages, with a 95 % bootstrap confidence interval for the accuracy difference. No claim of statistical proof or of performance in production is made. If H1 is not supported, this is reported as a finding and the settings (threshold, weight steps) are reviewed.
 
 ## 7. Requirement status tracking
+
+TIL-26 implements the §6 commands and tests, using option B selected on 2026-11-03.
+The [synthetic demo](../data/evaluation/runs/synthetic-demo/report.md) checks the
+pipeline only. It is not the TIL-25 labelled dataset and does not validate reviewer
+profile assumptions. The same command can use TIL-25 when delivered; simulated
+votes must keep the simulation label even with real reference-labelled records.
 
 Each requirement gets one status in the test report: **not tested**, **passed**, **failed** or **deferred** (with a reason, Should / Could only). A requirement is marked **passed** only after its acceptance check has actually been run, with a link to the test or report.
 

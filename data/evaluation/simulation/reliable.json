@@ -1,0 +1,67 @@
+{
+  "name": "reliable",
+  "seed": 20261103,
+  "control_share": 0.1,
+  "reviewers": [
+    {
+      "id": "reviewer-01",
+      "profile": "careful",
+      "accuracy": 0.85,
+      "dont_know_rate": 0.05
+    },
+    {
+      "id": "reviewer-02",
+      "profile": "careful",
+      "accuracy": 0.85,
+      "dont_know_rate": 0.05
+    },
+    {
+      "id": "reviewer-03",
+      "profile": "careful",
+      "accuracy": 0.85,
+      "dont_know_rate": 0.05
+    },
+    {
+      "id": "reviewer-04",
+      "profile": "careful",
+      "accuracy": 0.85,
+      "dont_know_rate": 0.05
+    },
+    {
+      "id": "reviewer-05",
+      "profile": "careful",
+      "accuracy": 0.85,
+      "dont_know_rate": 0.05
+    },
+    {
+      "id": "reviewer-06",
+      "profile": "average",
+      "accuracy": 0.7,
+      "dont_know_rate": 0.05
+    },
+    {
+      "id": "reviewer-07",
+      "profile": "average",
+      "accuracy": 0.7,
+      "dont_know_rate": 0.05
+    },
+    {
+      "id": "reviewer-08",
+      "profile": "average",
+      "accuracy": 0.7,
+      "dont_know_rate": 0.05
+    },
+    {
+      "id": "reviewer-09",
+      "profile": "average",
+      "accuracy": 0.7,
+      "dont_know_rate": 0.05
+    },
+    {
+      "id": "reviewer-10",
+      "profile": "average",
+      "accuracy": 0.7,
+      "dont_know_rate": 0.05
+    }
+  ]
+}
